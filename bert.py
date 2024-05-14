@@ -34,6 +34,15 @@ class BertSelfAttention(nn.Module):
     return proj
 
   def attention(self, key, query, value, attention_mask):
+    """
+    key: [bs, num_attention_heads, seq_len, attention_head_size]
+    query: [bs, num_attention_heads, seq_len, attention_head_size]
+    value: [bs, num_attention_heads, seq_len, attention_head_size]
+
+    attention_mast: [bs, 1, 1, seq_len]
+
+    output: [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
+    """
     # Each attention is calculated following eq. (1) of https://arxiv.org/pdf/1706.03762.pdf.
     # Attention scores are calculated by multiplying the key and query to obtain
     # a score matrix S of size [bs, num_attention_heads, seq_len, seq_len].
@@ -45,12 +54,27 @@ class BertSelfAttention(nn.Module):
 
     # Make sure to:
     # - Normalize the scores with softmax.
+    # - Apply dropout???
     # - Multiply the attention scores with the value to get back weighted values.
     # - Before returning, concatenate multi-heads to recover the original shape:
     #   [bs, seq_len, num_attention_heads * attention_head_size = hidden_size].
 
     ### TODO
-    raise NotImplementedError
+    bs, num_attention_heads, seq_len, attention_head_size = key.shape()
+
+    S_unnormalized = query @ key.transpose(2, 3) / torch.sqrt(self.all_head_size / self.num_attention_heads)
+
+    S_masked = torch.where(attention_mask == 0, S_unnormalized, attention_mask)
+
+    S_normalized = F.softmax(S_masked, dim=3)
+
+    S_dropped_out = self.dropout(S_normalized)
+
+    weighted_values = S_dropped_out @ value
+
+    output = weighted_values.transpose(1, 2).contiguous().reshape(bs, seq_len, num_attention_heads * attention_head_size)
+
+    return output
 
 
   def forward(self, hidden_states, attention_mask):
