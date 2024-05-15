@@ -60,9 +60,9 @@ class BertSelfAttention(nn.Module):
     #   [bs, seq_len, num_attention_heads * attention_head_size = hidden_size].
 
     ### TODO
-    bs, num_attention_heads, seq_len, attention_head_size = key.shape()
+    bs, num_attention_heads, seq_len, attention_head_size = key.size()
 
-    S_unnormalized = query @ key.transpose(2, 3) / torch.sqrt(self.all_head_size / self.num_attention_heads) # [bs, num_attention_heads, seq_len, seq_len]
+    S_unnormalized = query @ key.transpose(2, 3) / torch.sqrt(torch.Tensor([self.all_head_size / self.num_attention_heads])) # [bs, num_attention_heads, seq_len, seq_len]
 
     S_masked = torch.where(attention_mask == 0, S_unnormalized, attention_mask) # [bs, num_attention_heads, seq_len, seq_len]
 
@@ -72,9 +72,9 @@ class BertSelfAttention(nn.Module):
 
     weighted_values = S_dropped_out @ value # [bs, num_attention_heads, seq_len, attention_head_size]
 
-    output = weighted_values.transpose(1, 2).contiguous().reshape(bs, seq_len, num_attention_heads * attention_head_size) # [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
+    result = weighted_values.transpose(1, 2).contiguous().reshape(bs, seq_len, num_attention_heads * attention_head_size) # [bs, seq_len, num_attention_heads * attention_head_size = hidden_size]
 
-    return output
+    return result
 
 
   def forward(self, hidden_states, attention_mask):
@@ -127,9 +127,9 @@ class BertLayer(nn.Module):
 
     transformed_dropped_output = dropout(transformed_output)
 
-    output = ln_layer(input + transformed_dropped_output)
+    result = ln_layer(input + transformed_dropped_output)
 
-    return output
+    return result
 
 
   def forward(self, hidden_states, attention_mask):
@@ -143,7 +143,7 @@ class BertLayer(nn.Module):
     4. An add-norm operation that takes the input and output of the feed forward layer.
     """
     ### TODO
-    multi_head_attention = self.self_attention.forward(hidden_states, attention_mask)
+    multi_head_attention = self.self_attention(hidden_states, attention_mask)
 
     add_norm_attention = self.add_norm(input=hidden_states, output=multi_head_attention, dense_layer=self.attention_dense, dropout=self.attention_dropout, ln_layer=self.attention_layer_norm)
 
@@ -213,9 +213,9 @@ class BertModel(BertPreTrainedModel):
     ### TODO
     final_embeds = inputs_embeds + pos_embeds + tk_type_embeds
 
-    output = self.embed_layer_norm(self.embed_dropout(final_embeds))
+    result = self.embed_layer_norm(self.embed_dropout(final_embeds))
 
-    return output
+    return result
 
 
   def encode(self, hidden_states, attention_mask):
