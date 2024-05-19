@@ -62,7 +62,7 @@ class BertSelfAttention(nn.Module):
     ### TODO
     bs, num_attention_heads, seq_len, attention_head_size = key.size()
 
-    S_unnormalized = query @ key.transpose(2, 3) / torch.sqrt(torch.Tensor([self.all_head_size / self.num_attention_heads])) # [bs, num_attention_heads, seq_len, seq_len]
+    S_unnormalized = query @ key.transpose(2, 3) / torch.sqrt(torch.tensor([self.all_head_size / self.num_attention_heads], device=query.device)) # [bs, num_attention_heads, seq_len, seq_len]
 
     S_masked = torch.where(attention_mask == 0, S_unnormalized, attention_mask) # [bs, num_attention_heads, seq_len, seq_len]
 

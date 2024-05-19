@@ -64,8 +64,8 @@ class AdamW(Optimizer):
 
                 ### TODO
                 if 'm' not in state:
-                    state['m'] = torch.zeros(grad.size())
-                    state['v'] = torch.zeros(grad.size())
+                    state['m'] = torch.zeros(grad.size(), device=grad.device)
+                    state['v'] = torch.zeros(grad.size(), device=grad.device)
                     state['t'] = 0
 
                 state['t'] += 1
