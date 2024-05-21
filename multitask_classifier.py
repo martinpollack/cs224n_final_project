@@ -73,7 +73,12 @@ class MultitaskBERT(nn.Module):
                 param.requires_grad = True
         # You will want to add layers here to perform the downstream tasks.
         ### TODO
-        raise NotImplementedError
+        # for now, don't need any other variables, as we are just doing random prediction
+        # reuse classifier code
+        self.output_dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.num_labels = N_SENTIMENT_CLASSES
+        print(config.hidden_size)
+        self.output_logit_projection = nn.Linear(config.hidden_size, self.num_labels)
 
 
     def forward(self, input_ids, attention_mask):
@@ -83,7 +88,10 @@ class MultitaskBERT(nn.Module):
         # When thinking of improvements, you can later try modifying this
         # (e.g., by adding other layers).
         ### TODO
-        raise NotImplementedError
+        # Placeholder code, directly extract pooler_output as in classifier.py
+        bert_output = self.bert(input_ids, attention_mask)
+        pooler_output = bert_output['pooler_output']
+        return pooler_output
 
 
     def predict_sentiment(self, input_ids, attention_mask):
@@ -93,7 +101,10 @@ class MultitaskBERT(nn.Module):
         Thus, your output should contain 5 logits for each sentence.
         '''
         ### TODO
-        raise NotImplementedError
+        # use same implementation as classifier.py
+        pooler_output = self.forward(input_ids, attention_mask)
+        result = self.output_dropout(self.output_logit_projection(pooler_output))
+        return result
 
 
     def predict_paraphrase(self,
@@ -104,7 +115,14 @@ class MultitaskBERT(nn.Module):
         during evaluation.
         '''
         ### TODO
-        raise NotImplementedError
+        # baseline - predict random logits
+        # Note that calling forward isn't useful yet
+        pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
+        pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
+
+        batch_size = input_ids_1.size(0)
+        random_logits = torch.tensor([random.uniform(-1, 1) for _ in range(batch_size)], dtype=torch.float)
+        return random_logits
 
 
     def predict_similarity(self,
@@ -114,7 +132,14 @@ class MultitaskBERT(nn.Module):
         Note that your output should be unnormalized (a logit).
         '''
         ### TODO
-        raise NotImplementedError
+        # baseline - predict random logits
+        # Note that calling forward isn't useful yet
+        pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
+        pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
+
+        batch_size = input_ids_1.size(0)
+        random_logits = torch.tensor([random.uniform(-1, 1) for _ in range(batch_size)], dtype=torch.float)
+        return random_logits
 
 
 
