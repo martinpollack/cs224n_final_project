@@ -19,6 +19,7 @@ import torch
 from torch import nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
+from torch.cuda.amp import autocast, GradScaler
 
 from bert import BertModel
 from optimizer import AdamW
@@ -74,15 +75,21 @@ class MultitaskBERT(nn.Module):
         # You will want to add layers here to perform the downstream tasks.
         ### TODO
         # classifier code for sentiment
-        self.output_dropout = nn.Dropout(config.hidden_dropout_prob)
+        self.output_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
         self.num_labels = N_SENTIMENT_CLASSES
-        self.output_logit_projection = nn.Linear(config.hidden_size, self.num_labels)
+        self.output_logit_projection_1 = nn.Linear(config.hidden_size, 256)
+        self.output_logit_projection_2 = nn.Linear(256, self.num_labels)
+        self.output_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
         # paraphrase detection layers
-        self.paraphrase_dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.paraphrase_linear = nn.Linear(config.hidden_size * 2, 1)
+        self.paraphrase_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
+        self.paraphrase_linear_1 = nn.Linear(config.hidden_size * 2, 256)
+        self.paraphrase_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
+        self.paraphrase_linear_2 = nn.Linear(256, 1)
         # STS layers
-        self.sst_dropout = nn.Dropout(config.hidden_dropout_prob)
-        self.sst_linear = nn.Linear(config.hidden_size * 2, 1)
+        self.sst_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
+        self.sst_linear_1 = nn.Linear(config.hidden_size * 2, 256)
+        self.sst_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
+        self.sst_linear_2 = nn.Linear(256, 1)
 
     def forward(self, input_ids, attention_mask):
         'Takes a batch of sentences and produces embeddings for them.'
@@ -105,9 +112,10 @@ class MultitaskBERT(nn.Module):
         '''
         ### TODO
         # use same implementation as classifier.py
-        pooler_output = self.forward(input_ids, attention_mask)
-        result = self.output_dropout(self.output_logit_projection(pooler_output))
-        return result
+        x = self.forward(input_ids, attention_mask)
+        x = self.output_dropout_1(self.output_logit_projection_1(x))
+        x = self.output_dropout_2(self.output_logit_projection_2(x))
+        return x
 
 
     def predict_paraphrase(self,
@@ -124,9 +132,10 @@ class MultitaskBERT(nn.Module):
         pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
 
         batch_size = input_ids_1.size(0)
-        combined_output = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        logits = self.paraphrase_dropout(self.paraphrase_linear(combined_output))
-        return logits
+        x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
+        x = self.paraphrase_dropout_1(self.paraphrase_linear_1(x))
+        x = self.paraphrase_dropout_2(self.paraphrase_linear_2(x))
+        return x
 
 
     def predict_similarity(self,
@@ -143,9 +152,10 @@ class MultitaskBERT(nn.Module):
 
         batch_size = input_ids_1.size(0)
         # random_logits = torch.tensor([random.uniform(-1, 1) for _ in range(batch_size)], dtype=torch.float)
-        combined_output = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        logits = self.sst_dropout(self.sst_linear(combined_output))
-        return logits
+        x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
+        x = self.paraphrase_dropout_1(self.paraphrase_linear_1(x))
+        x = self.paraphrase_dropout_2(self.paraphrase_linear_2(x))
+        return x
 
 
 
@@ -185,14 +195,14 @@ def train_multitask(args):
     sst_train_dataloader = DataLoader(sst_train_data, shuffle=True, batch_size=args.batch_size,
                                       collate_fn=sst_train_data.collate_fn)
     sst_dev_dataloader = DataLoader(sst_dev_data, shuffle=False, batch_size=args.batch_size,
-                                    collate_fn=sst_dev_data.collate_fn)
+                                    collate_fn=sst_dev_data.collate_fn, num_workers=args.num_workers)
 
     # PARAPHRASE
     para_train_data = SentencePairDataset(para_train_data, args)
     para_dev_data = SentencePairDataset(para_dev_data, args)
 
     para_train_dataloader = DataLoader(para_train_data, shuffle=True, batch_size=args.batch_size,
-                                      collate_fn=para_train_data.collate_fn)
+                                      collate_fn=para_train_data.collate_fn, num_workers=args.num_workers)
     para_dev_dataloader = DataLoader(para_dev_data, shuffle=False, batch_size=args.batch_size,
                                      collate_fn=para_dev_data.collate_fn)
 
@@ -200,7 +210,7 @@ def train_multitask(args):
     sts_dev_data = SentencePairDataset(sts_dev_data, args, isRegression=True)
 
     sts_train_dataloader = DataLoader(sts_train_data, shuffle=True, batch_size=args.batch_size,
-                                     collate_fn=sts_train_data.collate_fn)
+                                     collate_fn=sts_train_data.collate_fn, num_workers=args.num_workers)
     sts_dev_dataloader = DataLoader(sts_dev_data, shuffle=False, batch_size=args.batch_size,
                                     collate_fn=sts_dev_data.collate_fn)
 
@@ -218,6 +228,8 @@ def train_multitask(args):
 
     lr = args.lr
     optimizer = AdamW(model.parameters(), lr=lr)
+    scaler = GradScaler()
+
     sst_best_dev_acc = 0
     para_best_dev_acc = 0
     sts_best_dev_corr = -2
@@ -250,9 +262,10 @@ def train_multitask(args):
                 b_ids = b_ids.to(device)
                 b_mask = b_mask.to(device)
                 b_labels = b_labels.to(device)
-                logits = model.predict_sentiment(b_ids, b_mask)
-                loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
-                loss += loss_classification
+                with autocast():
+                    logits = model.predict_sentiment(b_ids, b_mask)
+                    loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
+                    loss += loss_classification
             except StopIteration:
                 pass
 
@@ -269,9 +282,10 @@ def train_multitask(args):
                 b_mask2 = b_mask2.to(device)
                 b_labels = b_labels.to(device)
 
-                logits = model.predict_paraphrase(b_ids1, b_mask1, b_ids2, b_mask2)
-                loss_paraphrase = paraphrase_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                loss += loss_paraphrase
+                with autocast():
+                    logits = model.predict_paraphrase(b_ids1, b_mask1, b_ids2, b_mask2)
+                    loss_paraphrase = paraphrase_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
+                    loss += loss_paraphrase
             except StopIteration:
                 pass
 
@@ -288,15 +302,17 @@ def train_multitask(args):
                 b_mask2 = b_mask2.to(device)
                 b_labels = b_labels.to(device)
 
-                logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
-                loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                loss += loss_similarity
+                with autocast():
+                    logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
+                    loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
+                    loss += loss_similarity
             except StopIteration:
                 pass
 
             if loss.item() > 0:
-                loss.backward()
-                optimizer.step()
+                scaler.scale(loss).backward()
+                scaler.step(optimizer)
+                scaler.update()
 
             train_loss += loss.item()
             num_batches += 1
@@ -304,35 +320,38 @@ def train_multitask(args):
         train_loss /= max(num_batches, 1)
 
         # Evaluate on all tasks
-        train_sentiment_accuracy, train_sst_y_pred, train_sst_sent_ids, \
-            train_paraphrase_accuracy, train_para_y_pred, train_para_sent_ids, \
-            train_sts_corr, train_sts_y_pred, train_sts_sent_ids = model_eval_multitask(sst_train_dataloader,
-                                                                                        para_train_dataloader,
-                                                                                        sts_train_dataloader, model, device)
+        # if epoch == args.epochs-1:
+        #     train_sentiment_accuracy, train_sst_y_pred, train_sst_sent_ids, \
+        #     train_paraphrase_accuracy, train_para_y_pred, train_para_sent_ids, \
+        #     train_sts_corr, train_sts_y_pred, train_sts_sent_ids = model_eval_multitask(sst_train_dataloader,
+        #                                                                                 para_train_dataloader,
+        #                                                                                 sts_train_dataloader, model, device)
+        #
+        #     dev_sentiment_accuracy, dev_sst_y_pred, dev_sst_sent_ids, \
+        #     dev_paraphrase_accuracy, dev_para_y_pred, dev_para_sent_ids, \
+        #     dev_sts_corr, dev_sts_y_pred, dev_sts_sent_ids = model_eval_multitask(sst_dev_dataloader,
+        #                                                                           para_dev_dataloader,
+        #                                                                           sts_dev_dataloader, model, device)
 
-        dev_sentiment_accuracy, dev_sst_y_pred, dev_sst_sent_ids, \
-            dev_paraphrase_accuracy, dev_para_y_pred, dev_para_sent_ids, \
-            dev_sts_corr, dev_sts_y_pred, dev_sts_sent_ids = model_eval_multitask(sst_dev_dataloader,
-                                                                                  para_dev_dataloader,
-                                                                                  sts_dev_dataloader, model, device)
-
-        if dev_sentiment_accuracy > sst_best_dev_acc:
-            sst_best_dev_acc = dev_sentiment_accuracy
-            save_model(model, optimizer, args, config, args.filepath)
-
-        if dev_paraphrase_accuracy > para_best_dev_acc:
-            para_best_dev_acc = dev_paraphrase_accuracy
-            save_model(model, optimizer, args, config, args.filepath)
-
-        if dev_sts_corr > sts_best_dev_corr:
-            sts_best_dev_corr = dev_sts_corr
-            save_model(model, optimizer, args, config, args.filepath)
+        # if dev_sentiment_accuracy > sst_best_dev_acc:
+        #     sst_best_dev_acc = dev_sentiment_accuracy
+        #     save_model(model, optimizer, args, config, args.filepath)
+        #
+        # if dev_paraphrase_accuracy > para_best_dev_acc:
+        #     para_best_dev_acc = dev_paraphrase_accuracy
+        #     save_model(model, optimizer, args, config, args.filepath)
+        #
+        # if dev_sts_corr > sts_best_dev_corr:
+        #     sts_best_dev_corr = dev_sts_corr
+        #     save_model(model, optimizer, args, config, args.filepath)
 
 
-        print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, sst train acc :: {train_sentiment_accuracy :.3f}, "
-              f"sst dev acc :: {dev_sentiment_accuracy :.3f}, para train acc :: {train_paraphrase_accuracy :.3f}, "
-              f" para dev acc :: {dev_paraphrase_accuracy :.3f}, sts train corr :: {train_sts_corr :.3f}, "
-              f" sts dev corr :: {dev_sts_corr :.3f}")
+            # print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, sst train acc :: {train_sentiment_accuracy :.3f}, "
+            #   f"sst dev acc :: {dev_sentiment_accuracy :.3f}, para train acc :: {train_paraphrase_accuracy :.3f}, "
+            #   f" para dev acc :: {dev_paraphrase_accuracy :.3f}, sts train corr :: {train_sts_corr :.3f}, "
+            #   f" sts dev corr :: {dev_sts_corr :.3f}")
+
+    save_model(model, optimizer, args, config, args.filepath)
 
 
 def test_multitask(args):
@@ -443,6 +462,7 @@ def get_args():
                         help='last-linear-layer: the BERT parameters are frozen and the task specific head parameters are updated; full-model: BERT parameters are updated as well',
                         choices=('last-linear-layer', 'full-model'), default="last-linear-layer")
     parser.add_argument("--use_gpu", action='store_true')
+    parser.add_argument("--num_workers", type=int, default=0)
 
     parser.add_argument("--sst_dev_out", type=str, default="predictions/sst-dev-output.csv")
     parser.add_argument("--sst_test_out", type=str, default="predictions/sst-test-output.csv")
