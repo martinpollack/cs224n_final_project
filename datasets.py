@@ -9,6 +9,8 @@ examples are preprocessed.
 '''
 
 import csv
+import sys
+csv.field_size_limit(sys.maxsize)
 
 import torch
 from torch.utils.data import Dataset
@@ -270,3 +272,72 @@ def load_multitask_data(sentiment_filename,paraphrase_filename,similarity_filena
     print(f"Loaded {len(similarity_data)} {split} examples from {similarity_filename}")
 
     return sentiment_data, num_labels, paraphrase_data, similarity_data
+
+
+
+class NLIClassificationDataset(Dataset):
+    def __init__(self, dataset, args):
+        self.dataset = dataset
+        self.p = args
+        self.tokenizer = BertTokenizer.from_pretrained('bert-base-uncased')
+
+    def __len__(self):
+        return len(self.dataset)
+
+    def __getitem__(self, idx):
+        return self.dataset[idx]
+
+    def pad_data(self, data):
+
+        sent1 = [x[0] for x in data]
+        sent2 = [x[1] for x in data]
+        sent3 = [x[2] for x in data]
+
+        encoding1 = self.tokenizer(sent1, return_tensors='pt', padding=True, truncation=True)
+        encoding2 = self.tokenizer(sent2, return_tensors='pt', padding=True, truncation=True)
+        encoding3 = self.tokenizer(sent3, return_tensors='pt', padding=True, truncation=True)
+
+        token_ids1 = torch.LongTensor(encoding1['input_ids'])
+        attention_mask1 = torch.LongTensor(encoding1['attention_mask'])
+        token_type_ids1 = torch.LongTensor(encoding1['token_type_ids'])
+
+        token_ids2 = torch.LongTensor(encoding2['input_ids'])
+        attention_mask2 = torch.LongTensor(encoding2['attention_mask'])
+        token_type_ids2 = torch.LongTensor(encoding2['token_type_ids'])
+
+        token_ids3 = torch.LongTensor(encoding3['input_ids'])
+        attention_mask3 = torch.LongTensor(encoding3['attention_mask'])
+        token_type_ids3 = torch.LongTensor(encoding3['token_type_ids'])
+
+        return (token_ids1, token_type_ids1, attention_mask1,
+                token_ids2, token_type_ids2, attention_mask2,
+                token_ids3, token_type_ids3, attention_mask3)
+
+    def collate_fn(self, all_data):
+        (token_ids1, token_type_ids1, attention_mask1,
+         token_ids2, token_type_ids2, attention_mask2,
+         token_ids3, token_type_ids3, attention_mask3) = self.pad_data(all_data)
+
+        batched_data = {
+                'token_ids_1': token_ids1,
+                'token_type_ids_1': token_type_ids1,
+                'attention_mask_1': attention_mask1,
+                'token_ids_2': token_ids2,
+                'token_type_ids_2': token_type_ids2,
+                'attention_mask_2': attention_mask2,
+                'token_ids_3': token_ids3,
+                'token_type_ids_3': token_type_ids3,
+                'attention_mask_3': attention_mask3
+            }
+
+        return batched_data
+
+def load_nli_data(nli_filename):
+    nli_data = []
+    with open(nli_filename, 'r') as fp:
+        for record in csv.DictReader(fp,delimiter = ','):
+            nli_data.append((preprocess_string(record['sent0']),
+                             preprocess_string(record['sent1']),
+                             record['hard_neg'].strip()))
+                
+    return nli_data
