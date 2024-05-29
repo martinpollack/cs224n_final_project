@@ -13,7 +13,7 @@ import pandas as pd
 
 def main(args):
     nli_data = load_nli_data("data/nli_for_simcse.csv")
-    nli_data = nli_data[:]
+    nli_data = nli_data[:100]
 
     nli_dataset = NLIClassificationDataset(nli_data, args)
 
@@ -23,9 +23,11 @@ def main(args):
 
     bert = BertModel.from_pretrained('bert-base-uncased')
 
-    bert_embeddings = []
-
     device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
+
+    cos = CosineSimilarity(dim=1)
+    premise_entailment_dists = []
+    premise_contradiction_dists = []
     for batch in nli_dataloader:
         b_ids_1, b_mask_1, b_ids_2, b_mask_2, b_ids_3, b_mask_3 = (batch['token_ids_1'],
                                                                    batch['attention_mask_1'],
@@ -45,36 +47,44 @@ def main(args):
         b_bert_embeddings_2 = bert(b_ids_2, b_mask_2)['pooler_output']
         b_bert_embeddings_3 = bert(b_ids_3, b_mask_3)['pooler_output']
 
-        b_bert_embeddings = torch.cat((b_bert_embeddings_1.unsqueeze(-1), b_bert_embeddings_2.unsqueeze(-1), b_bert_embeddings_3.unsqueeze(-1)), 
-                                      dim=-1)
+        premise_entailment_dists.append(1 - cos(b_bert_embeddings_1, b_bert_embeddings_2))
+
+        premise_contradiction_dists.append(1 - cos(b_bert_embeddings_1, b_bert_embeddings_3))
+
+        # b_bert_embeddings = torch.cat((b_bert_embeddings_1.unsqueeze(-1), b_bert_embeddings_2.unsqueeze(-1), b_bert_embeddings_3.unsqueeze(-1)), 
+        #                               dim=-1)
 
 
-        bert_embeddings.append(b_bert_embeddings)
+        # bert_embeddings.append(b_bert_embeddings)
 
-    bert_embeddings = torch.cat(bert_embeddings, dim=0)
+    premise_entailment_dists = torch.cat(premise_entailment_dists, dim=0)
+
+    premise_contradiction_dists = torch.cat(premise_contradiction_dists, dim=0)
+
+    # bert_embeddings = torch.cat(bert_embeddings, dim=0)
     
-    premise = bert_embeddings[:, :, 0]
+    # premise = bert_embeddings[:, :, 0]
 
-    entailment = bert_embeddings[:, :, 1]
+    # entailment = bert_embeddings[:, :, 1]
 
-    contradiction = bert_embeddings[:, :, 2]
+    # contradiction = bert_embeddings[:, :, 2]
 
-    cos = CosineSimilarity(dim=1)
+    # cos = CosineSimilarity(dim=1)
 
-    premise_entailment_dist = 1 - cos(premise, entailment)
+    # premise_entailment_dist = 1 - cos(premise, entailment)
 
-    premise_contradiction_dist = 1 - cos(premise, contradiction)
+    # premise_contradiction_dist = 1 - cos(premise, contradiction)
 
-    difficulty_classification = torch.zeros(premise.shape[0])
+    difficulty_classification = torch.zeros(premise_entailment_dists.shape[0])
     m = args.distance_margin
 
-    difficulty_classification = torch.where(condition=((premise_entailment_dist < premise_contradiction_dist) & (premise_contradiction_dist <= premise_entailment_dist + m)),
-                                            input=torch.full(premise_entailment_dist.shape, 1),
+    difficulty_classification = torch.where(condition=((premise_entailment_dists < premise_contradiction_dists) & (premise_contradiction_dists <= premise_entailment_dists + m)),
+                                            input=torch.full(premise_entailment_dists.shape, 1),
                                             other=difficulty_classification)
     
     
-    difficulty_classification = torch.where(condition=(premise_contradiction_dist <= premise_entailment_dist),
-                                            input=torch.full(premise_entailment_dist.shape, 2),
+    difficulty_classification = torch.where(condition=(premise_contradiction_dists <= premise_entailment_dists),
+                                            input=torch.full(premise_entailment_dists.shape, 2),
                                             other=difficulty_classification)
     
     print(difficulty_classification)
