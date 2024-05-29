@@ -35,8 +35,7 @@ from datasets import (
 
 from evaluation import model_eval_sst, model_eval_multitask, model_eval_test_multitask
 
-
-TQDM_DISABLE=False
+TQDM_DISABLE = False
 
 
 # Fix the random seed.
@@ -62,6 +61,7 @@ class MultitaskBERT(nn.Module):
     - Paraphrase detection (predict_paraphrase)
     - Semantic Textual Similarity (predict_similarity)
     '''
+
     def __init__(self, config):
         super(MultitaskBERT, self).__init__()
         self.bert = BertModel.from_pretrained('bert-base-uncased')
@@ -74,22 +74,38 @@ class MultitaskBERT(nn.Module):
                 param.requires_grad = True
         # You will want to add layers here to perform the downstream tasks.
         ### TODO
-        # classifier code for sentiment
-        self.output_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
-        self.num_labels = N_SENTIMENT_CLASSES
-        self.output_logit_projection_1 = nn.Linear(config.hidden_size, 256)
-        self.output_logit_projection_2 = nn.Linear(256, self.num_labels)
-        self.output_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
-        # paraphrase detection layers
-        self.paraphrase_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
-        self.paraphrase_linear_1 = nn.Linear(config.hidden_size * 2, 256)
-        self.paraphrase_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
-        self.paraphrase_linear_2 = nn.Linear(256, 1)
-        # STS layers
-        self.sst_dropout_1 = nn.Dropout(config.hidden_dropout_prob)
-        self.sst_linear_1 = nn.Linear(config.hidden_size * 2, 256)
-        self.sst_dropout_2 = nn.Dropout(config.hidden_dropout_prob)
-        self.sst_linear_2 = nn.Linear(256, 1)
+        # Sentiment classification layers
+        self.sentiment_classifier = nn.Sequential(
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(config.hidden_size, 512),
+            nn.ReLU(),
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, N_SENTIMENT_CLASSES)
+        )
+
+        # Paraphrase detection layers
+        self.paraphrase_classifier = nn.Sequential(
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(config.hidden_size * 2, 512),
+            nn.ReLU(),
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1)
+        )
+
+        # Semantic Textual Similarity (STS) layers
+        self.sts_classifier = nn.Sequential(
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(config.hidden_size * 2, 512),
+            nn.ReLU(),
+            nn.Dropout(config.hidden_dropout_prob),
+            nn.Linear(512, 256),
+            nn.ReLU(),
+            nn.Linear(256, 1)
+        )
 
     def forward(self, input_ids, attention_mask):
         'Takes a batch of sentences and produces embeddings for them.'
@@ -103,7 +119,6 @@ class MultitaskBERT(nn.Module):
         pooler_output = bert_output['pooler_output']
         return pooler_output
 
-
     def predict_sentiment(self, input_ids, attention_mask):
         '''Given a batch of sentences, outputs logits for classifying sentiment.
         There are 5 sentiment classes:
@@ -113,10 +128,8 @@ class MultitaskBERT(nn.Module):
         ### TODO
         # use same implementation as classifier.py
         x = self.forward(input_ids, attention_mask)
-        x = self.output_dropout_1(self.output_logit_projection_1(x))
-        x = self.output_dropout_2(self.output_logit_projection_2(x))
+        x = self.sentiment_classifier(x)
         return x
-
 
     def predict_paraphrase(self,
                            input_ids_1, attention_mask_1,
@@ -126,17 +139,11 @@ class MultitaskBERT(nn.Module):
         during evaluation.
         '''
         ### TODO
-        # baseline - predict random logits
-        # Note that calling forward isn't useful yet
         pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
         pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
-
-        batch_size = input_ids_1.size(0)
         x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        x = self.paraphrase_dropout_1(self.paraphrase_linear_1(x))
-        x = self.paraphrase_dropout_2(self.paraphrase_linear_2(x))
+        x = self.paraphrase_classifier(x)
         return x
-
 
     def predict_similarity(self,
                            input_ids_1, attention_mask_1,
@@ -144,20 +151,11 @@ class MultitaskBERT(nn.Module):
         '''Given a batch of pairs of sentences, outputs a single logit corresponding to how similar they are.
         Note that your output should be unnormalized (a logit).
         '''
-        ### TODO
-        # baseline - predict random logits
-        # Note that calling forward isn't useful yet
         pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
         pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
-
-        batch_size = input_ids_1.size(0)
-        # random_logits = torch.tensor([random.uniform(-1, 1) for _ in range(batch_size)], dtype=torch.float)
         x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        x = self.paraphrase_dropout_1(self.paraphrase_linear_1(x))
-        x = self.paraphrase_dropout_2(self.paraphrase_linear_2(x))
+        x = self.sts_classifier(x)
         return x
-
-
 
 
 def save_model(model, optimizer, args, config, filepath):
@@ -185,32 +183,34 @@ def train_multitask(args):
     '''
     device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
     # Create the data and its corresponding datasets and dataloader.
-    sst_train_data, num_labels,para_train_data, sts_train_data = load_multitask_data(args.sst_train,args.para_train,args.sts_train, split ='train')
-    sst_dev_data, num_labels,para_dev_data, sts_dev_data = load_multitask_data(args.sst_dev,args.para_dev,args.sts_dev, split ='train')
+    sst_train_data, num_labels, para_train_data, sts_train_data = load_multitask_data(args.sst_train, args.para_train,
+                                                                                      args.sts_train, split='train')
+    sst_dev_data, num_labels, para_dev_data, sts_dev_data = load_multitask_data(args.sst_dev, args.para_dev,
+                                                                                args.sts_dev, split='train')
 
-    # SST
+    # Load all data
     sst_train_data = SentenceClassificationDataset(sst_train_data, args)
     sst_dev_data = SentenceClassificationDataset(sst_dev_data, args)
+    para_train_data = SentencePairDataset(para_train_data, args)
+    para_dev_data = SentencePairDataset(para_dev_data, args)
+    sts_train_data = SentencePairDataset(sts_train_data, args)
+    sts_dev_data = SentencePairDataset(sts_dev_data, args, isRegression=True)
 
+    # SST dataloader
     sst_train_dataloader = DataLoader(sst_train_data, shuffle=True, batch_size=args.batch_size,
                                       collate_fn=sst_train_data.collate_fn)
     sst_dev_dataloader = DataLoader(sst_dev_data, shuffle=False, batch_size=args.batch_size,
                                     collate_fn=sst_dev_data.collate_fn, num_workers=args.num_workers)
 
-    # PARAPHRASE
-    para_train_data = SentencePairDataset(para_train_data, args)
-    para_dev_data = SentencePairDataset(para_dev_data, args)
-
+    # Paraphrase dataloader
     para_train_dataloader = DataLoader(para_train_data, shuffle=True, batch_size=args.batch_size,
-                                      collate_fn=para_train_data.collate_fn, num_workers=args.num_workers)
+                                       collate_fn=para_train_data.collate_fn, num_workers=args.num_workers)
     para_dev_dataloader = DataLoader(para_dev_data, shuffle=False, batch_size=args.batch_size,
                                      collate_fn=para_dev_data.collate_fn)
 
-    sts_train_data = SentencePairDataset(sts_train_data, args)
-    sts_dev_data = SentencePairDataset(sts_dev_data, args, isRegression=True)
-
+    # STS dataloader
     sts_train_dataloader = DataLoader(sts_train_data, shuffle=True, batch_size=args.batch_size,
-                                     collate_fn=sts_train_data.collate_fn, num_workers=args.num_workers)
+                                      collate_fn=sts_train_data.collate_fn, num_workers=args.num_workers)
     sts_dev_dataloader = DataLoader(sts_dev_data, shuffle=False, batch_size=args.batch_size,
                                     collate_fn=sts_dev_data.collate_fn)
 
@@ -226,8 +226,7 @@ def train_multitask(args):
     model = MultitaskBERT(config)
     model = model.to(device)
 
-    lr = args.lr
-    optimizer = AdamW(model.parameters(), lr=lr)
+    optimizer = AdamW(model.parameters(), lr=args.lr)
     scaler = GradScaler()
 
     sst_best_dev_acc = 0
@@ -255,10 +254,11 @@ def train_multitask(args):
             optimizer.zero_grad()
             loss = torch.tensor(0.0, device=device)
 
+            # SST Batch
             try:
                 batch = next(sst_iter)
                 b_ids, b_mask, b_labels = (batch['token_ids'],
-                                               batch['attention_mask'], batch['labels'])
+                                           batch['attention_mask'], batch['labels'])
                 b_ids = b_ids.to(device)
                 b_mask = b_mask.to(device)
                 b_labels = b_labels.to(device)
@@ -267,14 +267,19 @@ def train_multitask(args):
                     loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
                     loss += loss_classification
             except StopIteration:
-                pass
+                # UPDATE FOR ROUND-ROBIN
+                if args.round_robin:
+                    sst_iter = iter(sst_train_dataloader)
+                else:
+                    pass
 
+            # Paraphrase batch
             try:
                 batch = next(para_iter)
                 (b_ids1, b_mask1, b_ids2, b_mask2,
-                     b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
-                          batch['token_ids_2'], batch['attention_mask_2'],
-                          batch['labels'])
+                 b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
+                              batch['token_ids_2'], batch['attention_mask_2'],
+                              batch['labels'])
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
@@ -287,14 +292,18 @@ def train_multitask(args):
                     loss_paraphrase = paraphrase_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
                     loss += loss_paraphrase
             except StopIteration:
-                pass
+                if args.round_robin:
+                    para_iter = iter(para_train_dataloader)
+                else:
+                    pass
 
+            # STS batch
             try:
                 batch = next(sts_iter)
                 (b_ids1, b_mask1, b_ids2, b_mask2,
-                b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
-                            batch['token_ids_2'], batch['attention_mask_2'],
-                            batch['labels'])
+                 b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
+                              batch['token_ids_2'], batch['attention_mask_2'],
+                              batch['labels'])
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
@@ -307,7 +316,10 @@ def train_multitask(args):
                     loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
                     loss += loss_similarity
             except StopIteration:
-                pass
+                if args.round_robin:
+                    sts_iter = iter(sts_train_dataloader)
+                else:
+                    pass
 
             if loss.item() > 0:
                 scaler.scale(loss).backward()
@@ -345,11 +357,10 @@ def train_multitask(args):
         #     sts_best_dev_corr = dev_sts_corr
         #     save_model(model, optimizer, args, config, args.filepath)
 
-
-            # print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, sst train acc :: {train_sentiment_accuracy :.3f}, "
-            #   f"sst dev acc :: {dev_sentiment_accuracy :.3f}, para train acc :: {train_paraphrase_accuracy :.3f}, "
-            #   f" para dev acc :: {dev_paraphrase_accuracy :.3f}, sts train corr :: {train_sts_corr :.3f}, "
-            #   f" sts dev corr :: {dev_sts_corr :.3f}")
+        # print(f"Epoch {epoch}: train loss :: {train_loss :.3f}, sst train acc :: {train_sentiment_accuracy :.3f}, "
+        #   f"sst dev acc :: {dev_sentiment_accuracy :.3f}, para train acc :: {train_paraphrase_accuracy :.3f}, "
+        #   f" para dev acc :: {dev_paraphrase_accuracy :.3f}, sts train corr :: {train_sts_corr :.3f}, "
+        #   f" sts dev corr :: {dev_sts_corr :.3f}")
 
     save_model(model, optimizer, args, config, args.filepath)
 
@@ -366,11 +377,11 @@ def test_multitask(args):
         model = model.to(device)
         print(f"Loaded model to test from {args.filepath}")
 
-        sst_test_data, num_labels,para_test_data, sts_test_data = \
-            load_multitask_data(args.sst_test,args.para_test, args.sts_test, split='test')
+        sst_test_data, num_labels, para_test_data, sts_test_data = \
+            load_multitask_data(args.sst_test, args.para_test, args.sts_test, split='test')
 
-        sst_dev_data, num_labels,para_dev_data, sts_dev_data = \
-            load_multitask_data(args.sst_dev,args.para_dev,args.sts_dev,split='dev')
+        sst_dev_data, num_labels, para_dev_data, sts_dev_data = \
+            load_multitask_data(args.sst_dev, args.para_dev, args.sts_dev, split='dev')
 
         sst_test_data = SentenceClassificationTestDataset(sst_test_data, args)
         sst_dev_data = SentenceClassificationDataset(sst_dev_data, args)
@@ -396,17 +407,17 @@ def test_multitask(args):
         sts_dev_dataloader = DataLoader(sts_dev_data, shuffle=False, batch_size=args.batch_size,
                                         collate_fn=sts_dev_data.collate_fn)
 
-        dev_sentiment_accuracy,dev_sst_y_pred, dev_sst_sent_ids, \
+        dev_sentiment_accuracy, dev_sst_y_pred, dev_sst_sent_ids, \
             dev_paraphrase_accuracy, dev_para_y_pred, dev_para_sent_ids, \
             dev_sts_corr, dev_sts_y_pred, dev_sts_sent_ids = model_eval_multitask(sst_dev_dataloader,
-                                                                    para_dev_dataloader,
-                                                                    sts_dev_dataloader, model, device)
+                                                                                  para_dev_dataloader,
+                                                                                  sts_dev_dataloader, model, device)
 
         test_sst_y_pred, \
             test_sst_sent_ids, test_para_y_pred, test_para_sent_ids, test_sts_y_pred, test_sts_sent_ids = \
-                model_eval_test_multitask(sst_test_dataloader,
-                                          para_test_dataloader,
-                                          sts_test_dataloader, model, device)
+            model_eval_test_multitask(sst_test_dataloader,
+                                      para_test_dataloader,
+                                      sts_test_dataloader, model, device)
 
         with open(args.sst_dev_out, "w+") as f:
             print(f"dev sentiment acc :: {dev_sentiment_accuracy :.3f}")
@@ -477,13 +488,16 @@ def get_args():
     parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)
     parser.add_argument("--lr", type=float, help="learning rate", default=1e-5)
 
+    # round-robin training
+    parser.add_argument("--round_robin", action='store_true')
+
     args = parser.parse_args()
     return args
 
 
 if __name__ == "__main__":
     args = get_args()
-    args.filepath = f'{args.fine_tune_mode}-{args.epochs}-{args.lr}-multitask.pt' # Save path.
+    args.filepath = f'{args.fine_tune_mode}-{args.epochs}-{args.lr}-multitask.pt'  # Save path.
     seed_everything(args.seed)  # Fix the seed for reproducibility.
     train_multitask(args)
     test_multitask(args)
