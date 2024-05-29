@@ -8,6 +8,7 @@ from multitask_classifier import seed_everything
 from bert import BertModel
 
 import argparse
+from tqdm import tqdm
 
 import pandas as pd
 
@@ -28,7 +29,7 @@ def main(args):
     cos = CosineSimilarity(dim=1)
     premise_entailment_dists = []
     premise_contradiction_dists = []
-    for batch in nli_dataloader:
+    for batch in tqdm(nli_dataloader, desc="Processing batches"):
         b_ids_1, b_mask_1, b_ids_2, b_mask_2, b_ids_3, b_mask_3 = (batch['token_ids_1'],
                                                                    batch['attention_mask_1'],
                                                                    batch['token_ids_2'],
