@@ -105,15 +105,24 @@ class MultitaskBERT(nn.Module):
         )
 
         # Semantic Textual Similarity (STS) layers
-        self.sts_classifier = nn.Sequential(
-            nn.Dropout(config.hidden_dropout_prob),
-            nn.Linear(config.hidden_size * 2, 512),
-            nn.ReLU(),
-            nn.Dropout(config.hidden_dropout_prob),
-            nn.Linear(512, 256),
-            nn.ReLU(),
-            nn.Linear(256, 1)
-        )
+        if args.alt_sts_loss:
+            self.cosine_head = nn.Sequential(
+                nn.Dropout(config.hidden_dropout_prob),
+                nn.Linear(config.hidden_size, 128),
+                nn.ReLU()
+            )
+            self.cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
+            self.relu = nn.ReLU()
+        else:
+            self.sts_classifier = nn.Sequential(
+                nn.Dropout(config.hidden_dropout_prob),
+                nn.Linear(config.hidden_size * 2, 512),
+                nn.ReLU(),
+                nn.Dropout(config.hidden_dropout_prob),
+                nn.Linear(512, 256),
+                nn.ReLU(),
+                nn.Linear(256, 1)
+            )
 
     def forward(self, input_ids, attention_mask):
         'Takes a batch of sentences and produces embeddings for them.'
@@ -153,6 +162,7 @@ class MultitaskBERT(nn.Module):
         x = self.paraphrase_classifier(x)
         return x
 
+
     def predict_similarity(self,
                            input_ids_1, attention_mask_1,
                            input_ids_2, attention_mask_2):
@@ -161,8 +171,16 @@ class MultitaskBERT(nn.Module):
         '''
         pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
         pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
-        x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        x = self.sts_classifier(x)
+
+        if args.alt_sts_loss:
+            x1 = self.cosine_head(pooler_output_1)
+            x2 = self.cosine_head(pooler_output_2)
+            x = self.cosine_similarity(x1, x2)
+            x = self.relu(x)
+            x = x * 5.0
+        else:
+            x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
+            x = self.sts_classifier(x)
         return x
 
 
@@ -244,10 +262,7 @@ def train_multitask(args):
     # Define loss functions
     classification_loss_fn = nn.CrossEntropyLoss()
     paraphrase_loss_fn = nn.BCEWithLogitsLoss()
-    if args.alt_sts_loss:
-        similarity_loss_fn = CosineSimilarityLoss()
-    else:
-        similarity_loss_fn = nn.MSELoss()
+    similarity_loss_fn = nn.MSELoss()
 
     # Loss weighting
     sst_weight = args.sst_weight
@@ -284,7 +299,6 @@ def train_multitask(args):
                     loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
                     loss += sst_weight * loss_classification
             except StopIteration:
-                # UPDATE FOR ROUND-ROBIN
                 if args.round_robin:
                     sst_iter = iter(sst_train_dataloader)
                 else:
