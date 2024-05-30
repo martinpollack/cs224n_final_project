@@ -37,6 +37,14 @@ from evaluation import model_eval_sst, model_eval_multitask, model_eval_test_mul
 
 TQDM_DISABLE = False
 
+class CosineSimilarityLoss(nn.Module):
+    def __init__(self):
+        super(CosineSimilarityLoss, self).__init__()
+        self.cosine_similarity = nn.CosineSimilarity(dim=1, eps=1e-6)
+
+    def forward(self, preds, target):
+        return 1 - self.cosine_similarity(preds, target)
+
 
 # Fix the random seed.
 def seed_everything(seed=11711):
@@ -236,7 +244,16 @@ def train_multitask(args):
     # Define loss functions
     classification_loss_fn = nn.CrossEntropyLoss()
     paraphrase_loss_fn = nn.BCEWithLogitsLoss()
-    similarity_loss_fn = nn.MSELoss()
+    if args.alt_sts_loss:
+        similarity_loss_fn = CosineSimilarityLoss()
+    else:
+        similarity_loss_fn = nn.MSELoss()
+
+    # Loss weighting
+    sst_weight = args.sst_weight
+    para_weight = args.para_weight
+    sts_weight = args.sts_weight
+
 
     # Run for the specified number of epochs.
     for epoch in range(args.epochs):
@@ -265,7 +282,7 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_sentiment(b_ids, b_mask)
                     loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
-                    loss += loss_classification
+                    loss += sst_weight * loss_classification
             except StopIteration:
                 # UPDATE FOR ROUND-ROBIN
                 if args.round_robin:
@@ -290,7 +307,7 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_paraphrase(b_ids1, b_mask1, b_ids2, b_mask2)
                     loss_paraphrase = paraphrase_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                    loss += loss_paraphrase
+                    loss += para_weight * loss_paraphrase
             except StopIteration:
                 if args.round_robin:
                     para_iter = iter(para_train_dataloader)
@@ -314,7 +331,7 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
                     loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                    loss += loss_similarity
+                    loss += sts_weight * loss_similarity
             except StopIteration:
                 if args.round_robin:
                     sts_iter = iter(sts_train_dataloader)
@@ -485,11 +502,19 @@ def get_args():
     parser.add_argument("--sts_test_out", type=str, default="predictions/sts-test-output.csv")
 
     parser.add_argument("--batch_size", help='sst: 64, cfimdb: 8 can fit a 12GB GPU', type=int, default=8)
-    parser.add_argument("--hidden_dropout_prob", type=float, default=0.3)
+    parser.add_argument("--hidden_dropout_prob", type=float, default=0.5)
     parser.add_argument("--lr", type=float, help="learning rate", default=1e-5)
 
-    # round-robin training
+    # Round-robin training
     parser.add_argument("--round_robin", action='store_true')
+
+    # Cosine similarity
+    parser.add_argument("--alt_sts_loss", action='store_true')
+
+    # Task weights
+    parser.add_argument("--sst_weight", type=float, default=1.0, help="Weight for the sentiment classification task")
+    parser.add_argument("--para_weight", type=float, default=1.0, help="Weight for the paraphrase detection task")
+    parser.add_argument("--sts_weight", type=float, default=1.0, help="Weight for the STS task")
 
     args = parser.parse_args()
     return args
