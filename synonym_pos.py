@@ -26,23 +26,28 @@ def get_wordnet_pos(treebank_tag):
         return None
 
 # Function to replace words with their synonyms based on POS tagging with a given probability
+""" Rolls the dice for each sentence. If that sentence is picked, then replace ALL nouns and adjectives all at once.
+When doing synonym replacement, ensure that the synonym obeys the same POS as the word it's replacing.
+"""
 def synonym_replacement(sentence, replacement_probability=0.1):
     words = word_tokenize(sentence)
     pos_tags = pos_tag(words)
     new_sentence = []
 
-    for word, pos in pos_tags:
-        wordnet_pos = get_wordnet_pos(pos) or wordnet.NOUN  # Default to NOUN if no POS tag is found
-        r = random.random()
-        if r < replacement_probability:
-            synonyms = wordnet.synsets(word, pos=wordnet_pos)
-            if synonyms:
-                synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
-                new_sentence.append(synonym)
-            else:
-                new_sentence.append(word)
-        else:
-            new_sentence.append(word)
+    r = random.random()
+    if r < replacement_probability:
+        for word, pos in pos_tags:
+            wordnet_pos = get_wordnet_pos(pos) 
+
+            if wordnet_pos == wordnet.NOUN or wordnet_pos == wordnet.ADJ:
+                synonyms = wordnet.synsets(word, pos=wordnet_pos)
+                if synonyms:
+                    synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
+                    new_sentence.append(synonym)
+                else:
+                    new_sentence.append(word)
+    else:
+        new_sentence = words
 
     return ' '.join(new_sentence)
 
@@ -58,7 +63,7 @@ if __name__ == '__main__':
     df['sentence'] = df['sentence'].apply(lambda x: synonym_replacement(x, replacement_probability))
 
     # Save the modified DataFrame to a new CSV file
-    output_path = 'data/ids_cfimdb_train_synonym.csv'
+    output_path = 'data/ids_cfimdb_train_synonym_pos.csv'
     with open(output_path, 'w') as f:
         f.write("\tid\tsentence\tsentiment\n")
         df.to_csv(f, index=False, header=False, sep='\t')
