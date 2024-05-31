@@ -11,3 +11,7 @@ pip install filelock==3.0.12
 pip install sklearn==0.0
 pip install tokenizers==0.15
 pip install explainaboard_client==0.0.7
+
+pip install pytest
+pip install nltk
+pip install pandas
