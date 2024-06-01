@@ -55,21 +55,22 @@ def main(args):
     premise_entailment_dists = torch.cat(premise_entailment_dists, dim=0).to(device)
     premise_contradiction_dists = torch.cat(premise_contradiction_dists, dim=0).to(device)
 
-    # bert_embeddings = torch.cat(bert_embeddings, dim=0)
+    torch.save(premise_entailment_dists, "premise_entailment_dists.pt")
+    torch.save(premise_contradiction_dists, "premise_contradiction_dists")
 
-    # premise = bert_embeddings[:, :, 0]
+    tune_m(args)
 
-    # entailment = bert_embeddings[:, :, 1]
+def tune_m(args):
+    premise_entailment_dists = torch.load("premise_entailment_dists.pt")
+    premise_contradiction_dists = torch.load("premise_contradiction_dists")
 
-    # contradiction = bert_embeddings[:, :, 2]
+    device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
 
-    # cos = CosineSimilarity(dim=1)
+    premise_entailment_dists.to(device)
+    premise_contradiction_dists.to(device)
 
-    # premise_entailment_dist = 1 - cos(premise, entailment)
-
-    # premise_contradiction_dist = 1 - cos(premise, contradiction)
-
-    # Difficulty classification
+    
+    
     difficulty_classification = torch.zeros(premise_entailment_dists.shape[0], device=device)
     m = args.distance_margin
 
@@ -83,43 +84,9 @@ def main(args):
                                             difficulty_classification)
 
     print(difficulty_classification)
-    torch.save(difficulty_classification, 'triplet_difficulty_classification.pt')
+    torch.save(difficulty_classification, f"triplet_difficulty_classification_{args.distance_margin}.pt")
 
-
-# def main():
-
-#     snli_data, multinli_data = load_nli_data(snli_filename='data/snli_1.0/snli_1.0_train.txt', multinli_filename='data/multinli_1.0/multinli_1.0_train.txt')
-
-#     snli_data = group_data(snli_data)
-
-#     multinli_data = group_data(multinli_data)
-
-#     full_nli_data = []
-#     full_nli_data.extend(snli_data)
-#     full_nli_data.extend(multinli_data)
-
-#     print(len(full_nli_data))
-
-# def group_data(data):
-#     df = pd.DataFrame(data, columns=('sentence1', 'sentence2', 'gold_label'))
-#     print(df.shape)
-#     output = df.loc[df['gold_label'].isin(['entailment', 'contradiction']), :]\
-#         .sort_values(['sentence1', 'gold_label'], ascending=False)\
-#         .groupby('sentence1')\
-#         .agg({'sentence2': tuple})\
-#         .reset_index()
-
-#     print(output.shape)
-
-#     output = output.loc[output['sentence2'].apply(len) == 2, :]\
-#         .apply(create_tuple, axis=1)\
-#         .values\
-#         .tolist()
-
-#     return output
-
-# def create_tuple(row):
-#         return (row['sentence1'], row['sentence2'][0], row['sentence2'][1])
+    print(torch.unique(difficulty_classification, return_counts=True))
 
 
 def get_args():
@@ -128,9 +95,13 @@ def get_args():
     parser.add_argument("--num_workers", type=int, default=0)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--distance_margin", type=float, default=0.2)
+    parser.add_argument("--full_run", action='store_true')
     return parser.parse_args()
 
 
 if __name__ == "__main__":
     args = get_args()
-    main(args)
+    if args.full_run:
+        main(args)
+    else:
+        tune_m(args)
