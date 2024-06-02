@@ -30,6 +30,5 @@ class ContrastiveLearningLoss(nn.Module):
         numerator = scaled_logit_pos
         denominator = scaled_logit_pos.sum(dim=0) + scaled_logit_neg.sum(dim=0)
 
-        output = torch.mult(torch.log(torch.div(numerator, denominator)), -1)
-
-        return output
+        output = torch.mul(torch.log(torch.div(numerator, denominator)), -1)
+        return output.mean()
