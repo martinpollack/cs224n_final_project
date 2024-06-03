@@ -24,8 +24,8 @@ class ContrastiveLearningLoss(nn.Module):
         cos_sim_pos = self.cosine_similarity(premise_emb, entailment_emb) # ()
         cos_sim_neg = self.cosine_similarity(premise_emb, contradiction_emb)
 
-        scaled_logit_pos = torch.div(torch.exp(cos_sim_pos), self.tau)
-        scaled_logit_neg = torch.div(torch.exp(cos_sim_neg), self.tau)
+        scaled_logit_pos = torch.exp(torch.div(cos_sim_pos, self.tau))
+        scaled_logit_neg = torch.exp(torch.div(cos_sim_neg, self.tau))
 
         numerator = scaled_logit_pos
         denominator = scaled_logit_pos.sum(dim=0) + scaled_logit_neg.sum(dim=0)
