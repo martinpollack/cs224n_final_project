@@ -132,8 +132,8 @@ def get_args():
 if __name__ == '__main__':
     args = get_args()
     if args.curriculum_training:
-        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-contrastive_curriculum.pt'
+        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-{args.tau}-contrastive_curriculum.pt'
     else:
-        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-contrastive-baseline.pt'  # Save path.
+        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-{args.tau}-contrastive-baseline.pt'  # Save path.
     seed_everything(args.seed)
     main(args)
