@@ -15,3 +15,5 @@ pip install explainaboard_client==0.0.7
 pip install pytest
 pip install nltk
 pip install pandas
+pip install matplotlib
+pip install seaborn
