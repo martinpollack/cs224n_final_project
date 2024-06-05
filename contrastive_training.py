@@ -99,7 +99,7 @@ def main(args):
         running_loss = 0.0
 
         if args.curriculum_training:
-            g_t = pacing_function(epoch + 1, T, k, 1)
+            g_t = pacing_function(epoch + 1, T, k, args.lambda_)
             selected_indices = sorted_indices[:g_t]
             subset = Subset(dataset, selected_indices)
             dataloader = DataLoader(subset, batch_size=args.batch_size, shuffle=True,
@@ -150,6 +150,7 @@ def get_args():
     parser.add_argument('--epochs', type=int, default=3, help='Number of training epochs')
     parser.add_argument('--tau', type=float, default=0.1, help='Temperature parameter for contrastive loss')
     parser.add_argument("--curriculum_training", action='store_true')
+    parser.add_argument("--lambda_", type=float, default=1.0, help='lambda for pacing function')
     parser.add_argument("--distance_margin", type=float, default=0.2)
     parser.add_argument("--sort_by_cosine", action='store_true')
     return parser.parse_args()
