@@ -83,10 +83,15 @@ def main(args):
     scaler = GradScaler()
 
     if args.curriculum_training:
-        difficulty_labels = torch.load(f"triplet_difficulty_classification_{args.distance_margin}.pt").to(device)
-        print(f"Loaded difficulty labels from triplet_difficulty_classification_{args.distance_margin}.pt")
-        sorted_indices = torch.argsort(difficulty_labels)
-        k = len(difficulty_labels)
+        if args.sort_by_cosine:
+            premise_entailment_dists = torch.load("premise_entailment_dists.pt").to(device)
+            print(f"Loaded cosine distances from premise_entailment_dists.pt")
+            sorted_indices = torch.argsort(premise_entailment_dists)
+        else:
+            difficulty_labels = torch.load(f"triplet_difficulty_classification_{args.distance_margin}.pt").to(device)
+            print(f"Loaded difficulty labels from triplet_difficulty_classification_{args.distance_margin}.pt")
+            sorted_indices = torch.argsort(difficulty_labels)
+        k = len(sorted_indices)
         T = args.epochs
 
     for epoch in range(args.epochs):
@@ -146,6 +151,7 @@ def get_args():
     parser.add_argument('--tau', type=float, default=0.1, help='Temperature parameter for contrastive loss')
     parser.add_argument("--curriculum_training", action='store_true')
     parser.add_argument("--distance_margin", type=float, default=0.2)
+    parser.add_argument("--sort_by_cosine", action='store_true')
     return parser.parse_args()
 
 
