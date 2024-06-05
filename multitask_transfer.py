@@ -124,7 +124,7 @@ class MultitaskBERTTransfer(nn.Module):
         # Paraphrase detection layers
         self.paraphrase_classifier = nn.Sequential(
             nn.Dropout(config.hidden_dropout_prob),
-            nn.Linear(config.hidden_size * 2, 512),
+            nn.Linear(config.hidden_size, 512),
             nn.ReLU(),
             nn.Dropout(config.hidden_dropout_prob),
             nn.Linear(512, 256),
@@ -144,12 +144,13 @@ class MultitaskBERTTransfer(nn.Module):
         else:
             self.sts_classifier = nn.Sequential(
                 nn.Dropout(config.hidden_dropout_prob),
-                nn.Linear(config.hidden_size * 2, 512),
+                nn.Linear(config.hidden_size, 512),
                 nn.ReLU(),
                 nn.Dropout(config.hidden_dropout_prob),
                 nn.Linear(512, 256),
                 nn.ReLU(),
-                nn.Linear(256, 1)
+                nn.Linear(256, 1),
+                nn.Sigmoid(),
             )
 
     def forward(self, input_ids, attention_mask):
@@ -183,10 +184,13 @@ class MultitaskBERTTransfer(nn.Module):
         during evaluation.
         '''
         ### TODO
-        pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
-        pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
-        x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        x = self.paraphrase_classifier(x)
+        # pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
+        # pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
+        # x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
+        input_ids_cat = torch.cat((input_ids_1, input_ids_2), dim=1)
+        attention_mask_cat = torch.cat((attention_mask_1, attention_mask_2), dim=1)
+        pooler_output = self.forward(input_ids_cat, attention_mask_cat)
+        x = self.paraphrase_classifier(pooler_output)
         return x
 
 
@@ -203,11 +207,14 @@ class MultitaskBERTTransfer(nn.Module):
             x1 = self.cosine_head(pooler_output_1)
             x2 = self.cosine_head(pooler_output_2)
             x = self.cosine_similarity(x1, x2)
-            x = self.relu(x)
-            x = x * 5.0
+            # x = self.relu(x)
+            # x = x * 5.0
+            x = torch.sigmoid(x) * 5.0
         else:
-            x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-            x = self.sts_classifier(x)
+            input_ids_cat = torch.cat((input_ids_1, input_ids_2), dim=1)
+            attention_mask_cat = torch.cat((attention_mask_1, attention_mask_2), dim=1)
+            x = self.forward(input_ids_cat, attention_mask_cat)
+            x = self.sts_classifier(x) * 5.0
         return x
 
 
@@ -291,7 +298,8 @@ def train_multitask(args):
     # Define loss functions
     classification_loss_fn = nn.CrossEntropyLoss()
     paraphrase_loss_fn = nn.BCEWithLogitsLoss()
-    similarity_loss_fn = nn.MSELoss()
+    similarity_loss_fn = nn.CosineEmbeddingLoss()
+    # want the y arg to be all 1s
 
     # Loss weighting
     sst_weight = args.sst_weight
@@ -373,7 +381,8 @@ def train_multitask(args):
 
                 with autocast():
                     logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
-                    loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
+                    y_1s = torch.ones_like(b_labels).to(device)
+                    loss_similarity = similarity_loss_fn(logits, b_labels.float().unsqueeze(1), y_1s.squeeze()) / args.batch_size
                     loss += sts_weight * loss_similarity
             except StopIteration:
                 if args.round_robin:
