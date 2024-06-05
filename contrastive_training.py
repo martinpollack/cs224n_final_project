@@ -5,7 +5,7 @@ from types import SimpleNamespace
 
 import torch
 from torch import nn
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Subset
 from bert import BertModel
 from optimizer import AdamW
 from torch.cuda.amp import autocast, GradScaler
@@ -52,6 +52,10 @@ def save_model(model, optimizer, args, config, filepath):
     print(f"save the model to {filepath}")
 
 
+def pacing_function(t, T, k, lambda_):
+    return int((t / T) ** lambda_ * k)
+
+
 def main(args):
     """
     Main function to run the training loop.
@@ -78,9 +82,24 @@ def main(args):
     optimizer = AdamW(model.parameters(), lr=args.lr)
     scaler = GradScaler()
 
+    if args.curriculum_training:
+        difficulty_labels = torch.load(f"triplet_difficulty_classification_{args.distance_margin}.pt").to(device)
+        print(f"Loaded difficulty labels from triplet_difficulty_classification_{args.distance_margin}.pt")
+        sorted_indices = torch.argsort(difficulty_labels)
+        k = len(difficulty_labels)
+        T = args.epochs
+
     for epoch in range(args.epochs):
         model.train()
         running_loss = 0.0
+
+        if args.curriculum_training:
+            g_t = pacing_function(epoch + 1, T, k, 1)
+            selected_indices = sorted_indices[:g_t]
+            subset = Subset(dataset, selected_indices)
+            dataloader = DataLoader(subset, batch_size=args.batch_size, shuffle=True,
+                                    collate_fn=dataset.collate_fn, num_workers=args.num_workers)
+
         for batch in tqdm(dataloader):
             token_ids_1 = batch['token_ids_1'].to(device)
             attention_mask_1 = batch['attention_mask_1'].to(device)
@@ -126,6 +145,7 @@ def get_args():
     parser.add_argument('--epochs', type=int, default=3, help='Number of training epochs')
     parser.add_argument('--tau', type=float, default=0.1, help='Temperature parameter for contrastive loss')
     parser.add_argument("--curriculum_training", action='store_true')
+    parser.add_argument("--distance_margin", type=float, default=0.2)
     return parser.parse_args()
 
 
