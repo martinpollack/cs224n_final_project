@@ -86,7 +86,7 @@ def main(args):
         if args.sort_by_cosine:
             premise_entailment_dists = torch.load("premise_entailment_dists.pt").to(device)
             print(f"Loaded cosine distances from premise_entailment_dists.pt")
-            sorted_indices = torch.argsort(premise_entailment_dists)
+            sorted_indices = torch.argsort(premise_entailment_dists, descending=True)
         else:
             difficulty_labels = torch.load(f"triplet_difficulty_classification_{args.distance_margin}.pt").to(device)
             print(f"Loaded difficulty labels from triplet_difficulty_classification_{args.distance_margin}.pt")
