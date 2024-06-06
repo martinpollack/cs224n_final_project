@@ -1,7 +1,8 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-
+import zipfile
+import os
 
 def visualize_classification_report(csv_path, title, output_path):
     # Load the classification report from CSV
@@ -24,21 +25,6 @@ def visualize_classification_report(csv_path, title, output_path):
     plt.savefig(output_path)  # Save the figure
     plt.close()
     print(f"Saved {title} visualization to '{output_path}'")
-
-
-def visualize_sts_correlation(file_path, output_path):
-    # Load STS correlation from the text file
-    with open(file_path, 'r') as f:
-        sts_corr = float(f.read().strip().split()[-1])
-
-    plt.figure(figsize=(6, 4))
-    plt.bar(['STS Correlation'], [sts_corr], color='skyblue')
-    plt.ylim(0, 1)
-    plt.title('STS Correlation')
-    plt.ylabel('Correlation')
-    plt.savefig(output_path)  # Save the figure
-    plt.close()
-    print(f"Saved STS correlation visualization to '{output_path}'")
 
 
 def visualize_sts_results(csv_path, output_path_prefix):
@@ -66,17 +52,49 @@ def visualize_sts_results(csv_path, output_path_prefix):
     plt.close()
     print(f"Saved STS prediction error distribution visualization to '{output_path_prefix}_error_distribution.png'")
 
+    # Calculate and plot STS correlation
+    sts_corr = sts_results_df['true_score'].corr(sts_results_df['pred_score'])
+    plt.figure(figsize=(6, 4))
+    plt.bar(['STS Correlation'], [sts_corr], color='skyblue')
+    plt.ylim(0, 1)
+    plt.title('STS Correlation')
+    plt.ylabel('Correlation')
+    plt.savefig(f'{output_path_prefix}_sts_correlation.png')  # Save the figure
+    plt.close()
+    print(f"Saved STS correlation visualization to '{output_path_prefix}_sts_correlation.png'")
+
+
+def save_files_to_zip(zip_file_name, files):
+    with zipfile.ZipFile(zip_file_name, 'w') as zipf:
+        for file in files:
+            zipf.write(file, os.path.basename(file))
+    print(f"Saved all files to '{zip_file_name}'")
+
+
+# File paths
+sentiment_csv = 'sentiment_classification_report.csv'
+paraphrase_csv = 'paraphrase_classification_report.csv'
+sts_results_csv = 'sts_results.csv'
+
+sentiment_png = 'sentiment_classification_report.png'
+paraphrase_png = 'paraphrase_classification_report.png'
+sts_pred_vs_true_png = 'sts_results_pred_vs_true.png'
+sts_error_dist_png = 'sts_results_error_distribution.png'
+sts_corr_png = 'sts_results_sts_correlation.png'
 
 # Visualize Sentiment Classification Report
-visualize_classification_report('sentiment_classification_report.csv', 'Sentiment Classification Report',
-                                'sentiment_classification_report.png')
+visualize_classification_report(sentiment_csv, 'Sentiment Classification Report', sentiment_png)
 
 # Visualize Paraphrase Classification Report
-visualize_classification_report('paraphrase_classification_report.csv', 'Paraphrase Classification Report',
-                                'paraphrase_classification_report.png')
-
-# Visualize STS Correlation Report
-visualize_sts_correlation('sts_correlation_report.txt', 'sts_correlation_report.png')
+visualize_classification_report(paraphrase_csv, 'Paraphrase Classification Report', paraphrase_png)
 
 # Visualize STS Results
-visualize_sts_results('sts_results.csv', 'sts_results')
+visualize_sts_results(sts_results_csv, 'sts_results')
+
+# Save all files into a zip
+all_files = [
+    sentiment_csv, paraphrase_csv, sts_results_csv,
+    sentiment_png, paraphrase_png, sts_pred_vs_true_png, sts_error_dist_png, sts_corr_png
+]
+
+save_files_to_zip('evaluation_reports.zip', all_files)
