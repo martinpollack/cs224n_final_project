@@ -292,8 +292,7 @@ def train_multitask(args):
     # Define loss functions
     classification_loss_fn = nn.CrossEntropyLoss()
     paraphrase_loss_fn = nn.BCEWithLogitsLoss()
-    similarity_loss_fn = nn.CosineEmbeddingLoss()
-    # want the y arg to be all 1s
+    similarity_loss_fn = nn.MSELoss()
 
     # Loss weighting
     sst_weight = args.sst_weight
@@ -386,7 +385,7 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
                     y_1s = torch.ones_like(b_labels).to(device)
-                    loss_similarity = similarity_loss_fn(logits, b_labels.float().unsqueeze(1), y_1s.squeeze()) / args.batch_size
+                    loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
                     sts_loss = sts_weight * loss_similarity
                     loss += sts_loss
             except StopIteration:
