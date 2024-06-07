@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 def main():
     # File paths
@@ -24,9 +25,6 @@ def main():
     dev_df['id'] = dev_df['id'].astype(str).str.strip()
     pred_df['id'] = pred_df['id'].astype(str).str.strip()
 
-    # Check for any leading/trailing spaces in sentence1 column (if used in merge)
-    dev_df['sentence1'] = dev_df['sentence1'].astype(str).str.strip()
-
     # Merge the dataframes on the id
     merged_df = dev_df.merge(pred_df, on='id', how='inner')
     print(f"Merged dataframe has {len(merged_df)} rows")
@@ -35,8 +33,18 @@ def main():
     mismatches = merged_df[merged_df['is_duplicate'] != merged_df['Predicted_Is_Paraphrase']]
     print(f"Found {len(mismatches)} mismatched rows")
 
-    # Print the mismatched predictions along with sentences
-    for index, row in mismatches.iterrows():
+    # Save the mismatched predictions to a CSV file
+    mismatches.to_csv('./analysis/mismatched_predictions.csv', index=False)
+    print("Mismatched predictions saved to './analysis/mismatched_predictions.csv'")
+
+    # Randomly sample mismatched predictions
+    sample_size = min(100, len(mismatches))  # Adjust the sample size as needed
+    random_sample = mismatches.sample(n=sample_size, random_state=42)
+    random_sample.to_csv('./analysis/random_sample_mismatched_predictions.csv', index=False)
+    print("Random sample of mismatched predictions saved to './analysis/random_sample_mismatched_predictions.csv'")
+
+    # Print the random sample for reference
+    for index, row in random_sample.iterrows():
         print(f"ID: {row['id']}")
         print(f"Sentence 1: {row['sentence1']}")
         print(f"Sentence 2: {row['sentence2']}")

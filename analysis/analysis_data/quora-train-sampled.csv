@@ -1,0 +1,101 @@
+id	sentence1	sentence2	is_duplicate
+171430 5c2e721b-9e4b-4f48-a6a1-980b72434296	Should I learn how to code?	What are some of the best ways to learn programming?	0.0
+292682 953363dc-361c-460c-8825-8983603d8128	Why is adsorption an exothermic process?	Is the blast of a nuclear bomb exothermic?	0.0
+342044 4d1df087-facd-4150-93df-8b6e26080827	Can an extrovert turn into an introvert?	How can an introvert turn into an extrovert?	0.0
+395512 d4058b7a-4cce-46df-b85f-acd807d84a9f	What are the requirements to become president in the United States and how are the requirements different in Ukraine?	What are the requirements to become president in the United States and how are the requirements different in France?	0.0
+388825 5f1be71d-e065-46a1-b3ec-5befbc430944	Who is the greatest villain in television history and why?	How strong is Cheetah and how is she a Wonder Woman villain?	0.0
+111087 a7d78e3b-c732-4c16-8c1f-f744b73acac8	How do I move out?	How can I move out?	1.0
+389333 22ecdcc3-e401-457c-863c-2dcabd15b2b4	Job openings in Toronto?	What are the best culinary schools in Phoenix?	0.0
+392979 73176b1c-da0d-4a21-8fac-7298efcc1a44	Why do men have to cheat?	Why do many men cheat?	1.0
+197520 8b8826d6-aa04-4dce-9f08-29d61d442bf7	What is the correlation between intelligence and grades?	What is the difference between intelligence and common sense?	0.0
+136144 96069bb2-1a19-414a-8e09-74b5bb054124	How can someone tell if they have fallen in love?	How do you know if you're in love?	0.0
+267009 7c071956-0415-402b-9772-035942f95d04	Why are some bosses highly paranoid?	What does boss do?	0.0
+155184 8cbb00b3-6a97-45be-8baf-9cbfd86810d4	What are some good productivity hacks?	What are the best product hacks?	0.0
+292291 370c391f-2850-4663-b34f-d25fa48e7f2d	What are the best cinema schools in Germany for international students?	What is the best vocational school in Germany?	0.0
+183871 2e202566-276b-42f1-bc03-856ac63e116e	What's it like to work at Steel Dynamics for your first job?	What's it like to work at U.S. Steel for your first job?	0.0
+243508 9043e3e7-f5a5-401b-8c7d-34ae0a66d6b5	Why won't my iPhone unlock?	What should I do if my iPhone won't unlock?	0.0
+73052 9a45810e-c301-4542-a06b-d37629ee703c	Why do some people think that the Earth is flat when it is very clear that it is not?	Why is there the flat Earth debate?	1.0
+217797 40463fa8-10d2-4282-9ead-92c1b8b37bdd	Is it difficult for a foreigner to use chopsticks?	Is it difficult for foreigners to use Chinese chopsticks?	1.0
+241837 37c06253-aa77-4c67-880b-1397b5e64349	What is the appropriate response when someone says they're proud of you?	What's the best response when someone says, “That's a good one.”?	0.0
+147234 4a7d3a45-173c-432d-bccb-43ecb9884310	How do I install VLC, GCC Compiler and Java in Fedora 22?	I installed my GCC with multilib disabled. How do I update or do I need to reinstall (and how to?) it in order to enable multilib and 32-bit compiler?	0.0
+10377 5bb39205-0e00-44ce-b1ab-048769456f80	"What does this quote mean: ""Humans are pattern-seeking animals and we are adept at finding patterns whether they exist or not”?"	Does a pattern exist in nature or do humans tend to see it everywhere?	0.0
+157799 bb35ff1b-adf5-4eed-aff2-a1b61c7e0586	What is the percentage of yadav voters in Uttar Pradesh?	Why is there casteism in Uttar Pradesh?	0.0
+297612 3a28d12e-7350-4556-9272-abe5b0877215	"How do you say ""Miss you, too,"" in Spanish? Are there multiple ways to say it?"	"Is there an accurate way to say ""whatever"" in Spanish?"	0.0
+345795 6a0f3022-184f-4293-84c9-1a17a05e2c76	What is beyond space?	What is space?	0.0
+298367 1ba02368-3d61-4e5d-a690-d007a1ebf073	How much food can a puppy eat at once?	When can puppies eat puppy food?	0.0
+73955 044ccf05-476b-45b6-a128-477cfa85f02c	What was the name of three brothers in Harry Potter?	Harry Potter Characters: What were the names of the three Peverells?	1.0
+387032 6dc644cc-5569-413f-90dc-b97b641ac2c7	"What are examples of sentences with the word ""abashed""?"	"What are examples of sentences with the word ""panache""?"	0.0
+187432 7408e304-2f85-4bd1-a4af-680cedf611fe	Do Filipino girls find Indian men attractive?	Do Pakistani women find Indian men attractive?	0.0
+226286 90df3c4a-2b2a-48c5-bc7c-f962c9a1c915	Quora why does smoking heroin give you constipation?	Why do people always say 'I'm ready to help you' even if we pay to them?	0.0
+140845 aa979853-61cf-48d3-b67f-3c63c5bf3a6f	Where do I get songs like Moon River?	"What's the meaning of the lyrics in the song ""Man on the Moon"" by R.E.M.?"	0.0
+389972 1de68053-4dd5-40ae-b28e-067cf7e41be1	Guys, do you put your penis in your pants going up or down?	Why are young boys usually taught to pee standing up by having them pull their pants all the down?	0.0
+258639 7292ad28-3a91-4614-9065-5203d3d6a79e	What famous rappers are bloods and crips?	How do I get in a blood gang?	0.0
+258989 010c0d85-007a-47d3-9ea3-288ec21ee2f8	Is it allowed to use scientic calculator and IS codes for UPSC civil service MAINS examination for optional subject such as civil engineering?	Is it allowed to use scientic calculator & IS codes for UPSC civil service MAINS examination for optional subject such as civil engineering?	1.0
+62856 5f30bdaf-010b-424f-8289-58a1e2d7ad1d	Is (was) Mark Zuckerburg the Red Hat coder in Codeforces?	I am currently a blue coder on Codeforces. How should I proceed to become red in a year or less?	0.0
+346827 5555f247-a733-4781-9e62-3a54ac5566a9	Is castor oil enough for beard growth?	Does Applying beard oil enhance my growth of beard?	0.0
+277070 fe2a1d4d-deee-4ec3-9ecd-b6eee049b1a9	Should Quora users be able to see a list of whom they've blocked?	How can I see a list of users I've blocked on Quora?	0.0
+69894 50b6063f-5f7f-47f7-8d0d-39445122d559	How do I draw a flowchart to evaluate the series p = 1 + 2*1 + 3*2 + 4*3 + ... + n*(n-1)?	How do you solve 2^(n-1) = (n^4-6n^3+23n^2-18n+24) /24 analytically?	0.0
+10230 c8c75088-9f9e-4bb3-b04d-b2e0e975cca1	How do I know if my WhatsApp account has been hacked?	How do you know if your site has been hacked?	0.0
+60917 e0e13499-1835-4ee3-9fa0-f17225098de6	How would the world be if Europeans never colonized?	"If the Europeans never ""discovered"" and colonized the rest of the world, what would the world look like right now?"	1.0
+80293 001db0cd-c17c-4d4b-b839-a3c4ad5f15e6	What are the things that are important in life?	What are the most important things in life? And why?	1.0
+364856 9b771898-710e-42f0-921e-041b85f74406	Why do people write questions on Quora that could be answered with a quick web search?	Why does people here in Quora still ask some questions that has been already answered somewhere else, and can be found easily using Google search?	1.0
+181001 303c6be3-10a3-4f64-b501-8f636b2bde22	What are the most inspiring start up stories?	What are the most inspirational stories ever?	0.0
+1988 d2f0b3cc-d6db-4baa-aa14-6e67edcab301	What will be the effect of recent demonetization of rs500 and rs 1000 notes on the real estate or property business?	How does the declaration that Rs 500 and Rs 1000 notes would not be accepted as valid transactions affect real estate in India?	1.0
+388771 d7bbd577-af46-48bb-81dc-837c77aa17ad	I love a girl and proposed her, she replied she does not have the same feelings for me . Will her feelings ever change for me?	Why do investment banks or accounting firms in India want to hire 3-4 year experience individual for entry level position ?	0.0
+387309 9a39501c-1803-4014-bde9-e0b35072e30f	How is data stored in the brain?	How is information stored in Brain?	1.0
+96028 c1ab243b-6de8-43e2-9d28-83ebfb6468c4	What does “Enoch’s Two Letters” tells us about working-class life in mid-twentieth century England?	What can history tell us about the future?	0.0
+209044 dac1f046-8167-4f65-8d72-43fc6a32a7e2	Are you a team player?	Are you a good team player?	1.0
+327028 342293f9-90c0-4bfb-84cb-8623a2dd10d7	How do I download a video from Facebook on an Android device?	How can I download videos from xtape.com to my android phone?	0.0
+310988 3b4c7600-325b-441f-9180-7c60d59dd1b2	What was the first thing that Buzz Aldrin said on the surface of the moon?	How can Buzz Aldrin urinate on the moon, if it is dangerous to expose the body in space?	0.0
+152655 64615571-4e25-44f7-9bab-7b1ce99a5044	Life became meaningless after I got to know my wife. What should I do?	How do I know I actually got a spark for my Life?	0.0
+191550 0db8c7ea-20eb-4519-acdb-b29ea577d3ae	Is it possible for a current sophomore at an American school with a 3.52 GPA to go up to a 3.75 by the end of their junior year?	I am halfway through sophomore year in high school and have a GPA of 2.8. Is it possible to get that GPA to a 3.73 by the end of junior year?	0.0
+22614 fbe69511-88ab-4102-805c-14ca3738548e	What are the top 10 mba colleges in coimbatore through tancet counselling?	What are the top 10 MBA colleges in Bangalore under PGCET with good placements?	0.0
+34669 ac376b7b-f2bb-44ca-9af8-9dca0cc22823	How do I automate e commerce website like flipkart using selenium web driver, navigate the menu and then add an item to cart?	Is there any add-on tool to automate the web UI for Google Maps using a Selenium web driver?	0.0
+377632 2ad56990-5701-40af-894f-81e302beac4c	Which Google engineering practicum program is there in China? Do they accept foreigners?	Is Google accepted in China?	0.0
+216639 a8ae1d46-9e7b-423e-819e-7b5beba17489	What are the best things to put on a USB flash drive as a Christmas present?	What is the best way to erase a USB Flash Drive?	0.0
+307440 9cdc3d66-bd71-4c54-9b7e-e1f280634285	How might the presence of intergalactic dust as an agent for reddening and dimming the light from ever more distant galaxies affect the determination of galactic distances assuming that galaxies all have the same brightness?	How might the presence of intergalactic dust as an agent for reddening and dimming the light from ever more distant galaxies affect the determination of galactic distances using the redshift associated with the expansion of the cosmos?	0.0
+110909 c8c379cc-3fb4-4f64-b82d-d0ffa6ba9916	How can I study the Bible?	What is the best way to self-study the Bible?	0.0
+350569 ca2d96e8-da2e-43c7-b4ed-010e9beb3ed6	Can you judge a cover by its book?	How do you judge a book, if not by its cover?	0.0
+97308 d1bc92b4-2d18-4db4-8f75-b9413db221f8	What are some good retirement plans?	What are some interesting retirement plans?	1.0
+277855 ff6d3b34-4f8d-4cd9-a93e-9c19907f013d	What's a good processor speed for gaming?	What's a good processor speed for a laptop?	0.0
+385996 5fd6b4a9-fc24-40a8-a391-36f786e621de	Can exercising on trampoline enhance body strength?	What is the best university in US that offers online bachelor's degree in CS?	0.0
+53266 e135149f-9880-4838-b4c7-2879ade788a0	Are light-skinned black people descendants of Caucasians?	Why are so-called black people labelled as black when in fact their skin is not black?	0.0
+207686 78df7502-2a66-4c5e-8107-4e928cf0f130	How do I use IDM?	How do I use IDM on mobile?	0.0
+316494 0898a01e-0b1e-4d5a-87ef-6efe19ff2ebb	What are the secrets of numbers 3, 6 and 9?	How many two-digit numbers can you form using the digits 1,2,3,4,5,6,7,8 and 9 without repetition?	0.0
+214806 6229a487-919f-4d47-b7e8-d1d7701da4b0	"What can I do if I believe my question was wrongfully marked as ""needing improvement"" by Quora?"	"How often do you mark questions as ""needing improvement"" on Quora?"	1.0
+383295 8d7ddb5e-5b00-48e5-8dc7-ea55764ddc3f	What are the advantages of a dot matrix printer over a inkjet printer?	What are the major characteristics of Samoyed Spitz puppies?	0.0
+98553 c72ad40d-4caa-4aa6-a99c-ec49a03a1cd0	Why are Indians so hostile towards Pakistan?	Why is Pakistan angry with Indians?	0.0
+66329 4a22330a-1d82-4dd7-8cf0-b2c237b6fb93	Can a CO2 tank be filled with compressed air? If so, how?	Can a CO2 tank be filled with compressed air?	1.0
+300430 9402d6c8-98ac-4217-a9d4-ea40aa591610	I'm 18. How can I make money online?	What are ways I can make money online?	1.0
+399493 24557228-2e61-4c59-9928-1ee55419b9b5	What would happen if a woman took Viagra?	Does Viagra really work?	0.0
+121570 215b9d9b-b012-474c-8021-84c42b2f346a	He's a junior in college living with six of his friends. He wants me to climb through his window instead of going through the front door. I know that pretty much makes me a booty call; how do I change that?	How do I change who I am?	0.0
+210334 4807fab5-1106-4630-98ad-e6ea00c5e4ef	What are some tips on making it through the job interview process at First Merchants?	What are some tips on making it through the job interview process at Coach?	0.0
+300297 1a3f3c46-28b7-49b0-8f72-84293f6b71e0	Hollywood overwhelmingly supports Democrats, why can't it be the other way around?	Why are so many Jewish people in the U.S. Democrats when Republicans tend to be more pro-Israel?	0.0
+293653 b765fdf0-0e64-495b-b2d1-98660a88db05	Why can't I like comments on Instagram?	Why aren't Instagram users being notified of my comments?	0.0
+221903 a2b49146-92c3-477b-b167-4af56e5bd281	Is it possible for psychopaths to do good?	Is it possible to become a psychopath?	0.0
+386343 7c58f9ca-0a60-4634-b4df-05c8a85100ba	What are some really interesting machine learning projects for beginners?	What are some good projects for beginners in machine learning? Kindly suggest some hosted on github.?	0.0
+307633 47e4c2a6-7690-43da-ab3c-f10fce5fcb43	How do you keep a sunburn from peeling?	After a sunburn, how do you prevent your skin from peeling?	1.0
+150932 ae117e65-864c-4e2d-978e-2d5eaa8a90df	What are the best sources to learn web development for free?	What are some online free sources for learning web development?	1.0
+284198 304508e4-2f35-44b1-bc1c-d12c93ea375a	How did Donald Trump win the presidency?	How and Why did Donald Trump win the election?	1.0
+199458 4761492a-f44b-488e-9429-47429b8a9f6f	What are some good project (time period 1 month) for deep learning purposes only in C/C++ and data structure?	What are some good project idea {time limit one month} using data structure in C/C++ for deep learning?	1.0
+393779 0deb2bf2-3197-41e1-9f2d-5ac0247b30d2	Has anyone used leadquizzes.com before?	Has anyone used Incorporate (.com) before?	0.0
+258875 f5bda06f-8c36-4369-a08d-ce981ccfcf61	What is the difference between observational and participatory documentary modes?	Is logic derived from observation?	0.0
+207244 b4fca6f1-eaaf-4809-bdb9-6036184e7c8b	What would a nuclear war between Russia and the US look like? Which side would surrender first? What would be the aftermath?	What if nuclear war broke out between the US and Russia?	1.0
+109473 d1b36d77-55f7-4c84-81a5-52e84c3de79c	How do i hide images and video in Samsung J7?	Is samsung j7 water proof?	0.0
+87026 4c7c0464-3996-4367-a3f2-e43cf1839280	What is A brand strategist?	What does a brand strategist do?	1.0
+231993 893b5e98-fef2-4452-b11e-ddc04c57f5c8	Is there any music similar to The xx song Intro?	What is The XX's Intro song's genre?	0.0
+143840 c3a50881-c15e-4d45-a61b-54a879e5af2b	Which is best among ICICI, HDFC, KOTAK MAHINDRA, YES BANK, HSBC?	With which bank shall I open a savings account in India?	0.0
+317535 10275721-9a16-416c-9257-1720afa7debc	What are some of the best marriage proposals?	What is the best proposal to propose?	0.0
+88476 8fb75989-7679-4252-8431-631d5e1931ab	What are the things to know about Finnish girls and culture for dating?	What do I need to know about dating a Dane?	0.0
+174375 7fb32b82-b412-4839-a559-bf965eee4c81	How can I make 50 million dollars in 1 year?	How can I make 60 million dollars in 1 year?	0.0
+77655 947eed86-8783-488d-b8c4-ccbc8f6c2894	How the world's first map created?	When and how was the first World map made?	1.0
+184037 01fafbc0-5246-4838-b726-a23fdb9f4b94	What are the bitter truths about doing MBA in the US for an Indian?	What are the bitter truths of going to the US for an MBA as an Indian?	1.0
+162755 1bb12fc5-c72b-48b9-9b9c-287962f598ed	When you get a benzoyl peroxide burn, how should you treat it?	How can I treat a benzoyl peroxide burn?	1.0
+102829 088fe01a-488e-4b0b-bcaf-5c2c219e8037	What are the best places for a bike road trip in India?	Which are the best places to go on a road trip in India?	0.0
+228465 ca16d5ed-9884-4955-b15c-16073b57946a	Are there any revolutionary or major advancements in spinal health underway?	What is youth unemployment in Slovenia?	0.0
+112645 ebd4ff02-6ec8-413f-9e8a-88e4761e847a	What is the derivative of 3y with respect to dx?	What is the derivative of [math]e^x[/math] with respect to [math]y[/math]?	0.0
+391982 c1e769d1-8858-4f3a-90b1-07cc1363e8a6	What is the meaning of Urdu word 'Khairiyat'?	What is the meaning of Urdu word 'Mukammal'?	0.0
+308007 2a0be629-a42f-4dd5-bb1d-d05304a30e62	What is the most disgusting / disturbing thing you have ever done or witnessed?	What is the most horrifying thing you have ever witnessed?	0.0
+220309 c5edd08a-4ad0-48a3-896d-5d843c4a4bca	How do I start a business in a developing country?	How can I start a small business in a developing country?	1.0
+31867 ad9ada6a-f3bd-4c95-b4dc-74b66db921aa	Why do deep neural nets require so much training data to perform well?	Why doesn't Uber remove a cancelled driver temporarily from the driver pool?	0.0
+147163 bd156a6c-b2e8-458c-97a7-bb9636365a9f	How can Joker beat Superman?	Can Superman beat Thanos?	0.0
