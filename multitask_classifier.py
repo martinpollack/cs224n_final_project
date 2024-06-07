@@ -96,7 +96,7 @@ class MultitaskBERT(nn.Module):
         # Paraphrase detection layers
         self.paraphrase_classifier = nn.Sequential(
             nn.Dropout(config.hidden_dropout_prob),
-            nn.Linear(config.hidden_size * 2, 512),
+            nn.Linear(config.hidden_size, 512),
             nn.ReLU(),
             nn.Dropout(config.hidden_dropout_prob),
             nn.Linear(512, 256),
@@ -116,12 +116,13 @@ class MultitaskBERT(nn.Module):
         else:
             self.sts_classifier = nn.Sequential(
                 nn.Dropout(config.hidden_dropout_prob),
-                nn.Linear(config.hidden_size * 2, 512),
+                nn.Linear(config.hidden_size, 512),
                 nn.ReLU(),
                 nn.Dropout(config.hidden_dropout_prob),
                 nn.Linear(512, 256),
                 nn.ReLU(),
-                nn.Linear(256, 1)
+                nn.Linear(256, 1),
+                nn.Sigmoid(),
             )
 
     def forward(self, input_ids, attention_mask):
@@ -156,10 +157,13 @@ class MultitaskBERT(nn.Module):
         during evaluation.
         '''
         ### TODO
-        pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
-        pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
-        x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-        x = self.paraphrase_classifier(x)
+        # pooler_output_1 = self.forward(input_ids_1, attention_mask_1)
+        # pooler_output_2 = self.forward(input_ids_2, attention_mask_2)
+        # x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
+        input_ids_cat = torch.cat((input_ids_1, input_ids_2), dim=1)
+        attention_mask_cat = torch.cat((attention_mask_1, attention_mask_2), dim=1)
+        pooler_output = self.forward(input_ids_cat, attention_mask_cat)
+        x = self.paraphrase_classifier(pooler_output)
         return x
 
 
@@ -176,11 +180,14 @@ class MultitaskBERT(nn.Module):
             x1 = self.cosine_head(pooler_output_1)
             x2 = self.cosine_head(pooler_output_2)
             x = self.cosine_similarity(x1, x2)
-            x = self.relu(x)
-            x = x * 5.0
+            # x = self.relu(x)
+            # x = x * 5.0
+            x = torch.sigmoid(x) * 5.0
         else:
-            x = torch.cat((pooler_output_1, pooler_output_2), dim=1)
-            x = self.sts_classifier(x)
+            input_ids_cat = torch.cat((input_ids_1, input_ids_2), dim=1)
+            attention_mask_cat = torch.cat((attention_mask_1, attention_mask_2), dim=1)
+            x = self.forward(input_ids_cat, attention_mask_cat)
+            x = self.sts_classifier(x) * 5.0
         return x
 
 
@@ -274,6 +281,9 @@ def train_multitask(args):
     for epoch in range(args.epochs):
         model.train()
         train_loss = 0
+        sst_train_loss = 0
+        para_train_loss = 0
+        sts_train_loss = 0
         num_batches = 0
 
         # Iterate through longest dataloader
@@ -282,9 +292,14 @@ def train_multitask(args):
         para_iter = iter(para_train_dataloader)
         sts_iter = iter(sts_train_dataloader)
 
-        for _ in tqdm(range(max_batches), desc=f'train-{epoch}', disable=TQDM_DISABLE):
+        progress_bar = tqdm(range(max_batches), desc=f'train-{epoch}', disable=TQDM_DISABLE)
+
+        for _ in progress_bar:
             optimizer.zero_grad()
             loss = torch.tensor(0.0, device=device)
+            sst_loss = torch.tensor(0.0, device=device)
+            para_loss = torch.tensor(0.0, device=device)
+            sts_loss = torch.tensor(0.0, device=device)
 
             # SST Batch
             try:
@@ -297,7 +312,8 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_sentiment(b_ids, b_mask)
                     loss_classification = classification_loss_fn(logits, b_labels.view(-1)) / args.batch_size
-                    loss += sst_weight * loss_classification
+                    sst_loss = sst_weight * loss_classification
+                    loss += sst_loss
             except StopIteration:
                 if args.round_robin:
                     sst_iter = iter(sst_train_dataloader)
@@ -321,7 +337,8 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_paraphrase(b_ids1, b_mask1, b_ids2, b_mask2)
                     loss_paraphrase = paraphrase_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                    loss += para_weight * loss_paraphrase
+                    para_loss = para_weight * loss_paraphrase
+                    loss += para_loss
             except StopIteration:
                 if args.round_robin:
                     para_iter = iter(para_train_dataloader)
@@ -345,7 +362,8 @@ def train_multitask(args):
                 with autocast():
                     logits = model.predict_similarity(b_ids1, b_mask1, b_ids2, b_mask2)
                     loss_similarity = similarity_loss_fn(logits.squeeze(), b_labels.float()) / args.batch_size
-                    loss += sts_weight * loss_similarity
+                    sts_loss = sts_weight * loss_similarity
+                    loss += sts_loss
             except StopIteration:
                 if args.round_robin:
                     sts_iter = iter(sts_train_dataloader)
@@ -358,9 +376,25 @@ def train_multitask(args):
                 scaler.update()
 
             train_loss += loss.item()
+            sst_train_loss += sst_loss.item()
+            para_train_loss += para_loss.item()
+            sts_train_loss += sts_loss.item()
             num_batches += 1
 
+            progress_bar.set_postfix({
+                "Total Loss": f"{loss.item():.4f}",
+                "SST Loss": f"{sst_loss.item():.4f}",
+                "Para Loss": f"{para_loss.item():.4f}",
+                "STS Loss": f"{sts_loss.item():.4f}"
+            })
+
         train_loss /= max(num_batches, 1)
+        sst_train_loss /= max(num_batches, 1)
+        para_train_loss /= max(num_batches, 1)
+        sts_train_loss /= max(num_batches, 1)
+
+        tqdm.write(
+            f"Epoch {epoch + 1}/{args.epochs}, Average Loss: {train_loss:.4f} (SST: {sst_train_loss:.4f}, Para: {para_train_loss:.4f}, STS: {sts_train_loss:.4f})")
 
         # Evaluate on all tasks
         # if epoch == args.epochs-1:
