@@ -31,10 +31,14 @@ def do_replacement(word, pos, new_sentence):
     if wordnet_pos == wordnet.ADJ:
         synonyms = wordnet.synsets(word, pos=wordnet_pos)
         if synonyms:
-            print("There exist {} synonyms!".format(len(synonyms)))
-            synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
-            print("I replaced {} with {}!".format(word, synonym))
-            new_sentence.append(synonym)
+            all_lemmas = [lemma for synset in synonyms for lemma in synset.lemmas()]
+            print("There exist {} synonyms!".format(len(all_lemmas)))
+            if all_lemmas:
+                synonym = random.choice(all_lemmas).name()  # Choose a random synonym
+                print("I replaced {} with {}!".format(word, synonym))
+                new_sentence.append(synonym)
+            else:
+                new_sentence.append(word)
         else:
             new_sentence.append(word)
     else:
