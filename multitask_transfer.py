@@ -603,6 +603,10 @@ def get_args():
     parser.add_argument("--para_weight", type=float, default=1.0, help="Weight for the paraphrase detection task")
     parser.add_argument("--sts_weight", type=float, default=1.0, help="Weight for the STS task")
 
+    # SGD synonym replacement https://journals.agh.edu.pl/csci/article/view/3023/2181
+    parser.add_argument("--sgd_synonym_replacement", action='store_true')
+    parser.add_argument("--sgd_synonym_replacement_p", type=float, default=0.25, help="Probability of replacement for a given SGD minibatch")
+
     # Pretrained contrastive learning weights path
     parser.add_argument("--transfer_path", type=str)
 
