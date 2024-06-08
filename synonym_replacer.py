@@ -26,7 +26,7 @@ def get_wordnet_pos(treebank_tag):
     else:
         return None
 
-def do_replacement(word, pos, new_sentence):
+def do_replacement(word, pos, new_sentence) -> bool:
     wordnet_pos = get_wordnet_pos(pos)
     if wordnet_pos == wordnet.ADJ:
         synonyms = wordnet.synsets(word, pos=wordnet_pos)
@@ -40,14 +40,18 @@ def do_replacement(word, pos, new_sentence):
                 if synonym == word and len(all_lemmas) > 1:
                     synonym = random.choice(all_lemmas).name()
                 
-                print("I replaced {} with {}!".format(word, synonym))
+                # print("I replaced {} with {}!".format(word, synonym))
                 new_sentence.append(synonym)
+                return True
             else:
                 new_sentence.append(word)
+                return False
         else:
             new_sentence.append(word)
+            return False
     else:
         new_sentence.append(word)
+        return False
 
 def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> torch.Tensor:
     """
@@ -87,13 +91,20 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
         forward_direction = random.random() < 0.5
 
         # Iterate through pos_tags in the chosen direction
+        done = False # flag bc we only do one replacement then stop
         if forward_direction:
             for word, pos in pos_tags:
-                do_replacement(word, pos, new_sentence)
+                if not done:
+                    done = do_replacement(word, pos, new_sentence)
+                else:
+                    new_sentence.append(word)
         else:
             # Backward direction of the sentence
             for word, pos in reversed(pos_tags):
-                do_replacement(word, pos, new_sentence)
+                if not done:
+                    done = do_replacement(word, pos, new_sentence)
+                else:
+                    new_sentence.append(word)
             new_sentence.reverse()  # Reverse to maintain original order
         
         # Convert the new sentence back to token IDs
