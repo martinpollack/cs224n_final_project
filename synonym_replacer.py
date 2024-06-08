@@ -32,9 +32,14 @@ def do_replacement(word, pos, new_sentence):
         synonyms = wordnet.synsets(word, pos=wordnet_pos)
         if synonyms:
             all_lemmas = [lemma for synset in synonyms for lemma in synset.lemmas()]
-            print("There exist {} synonyms!".format(len(all_lemmas)))
+            # print("There exist {} synonyms!".format(len(all_lemmas)))
             if all_lemmas:
                 synonym = random.choice(all_lemmas).name()  # Choose a random synonym
+                
+                # If the synonym is the same as the original word and there are more than one synonyms, try once more
+                if synonym == word and len(all_lemmas) > 1:
+                    synonym = random.choice(all_lemmas).name()
+                
                 print("I replaced {} with {}!".format(word, synonym))
                 new_sentence.append(synonym)
             else:
@@ -57,14 +62,14 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
         torch.Tensor: The tensor of token IDs after potentially replacing some with synonyms.
     """
     # Print the shape of the tensor
-    print(f"Shape of ids tensor: {ids.shape}")
+    # print(f"Shape of ids tensor: {ids.shape}")
 
     # Randomly decide whether to perform replacements
     r = random.random()
     if r >= p:
         return ids
 
-    print("HIT!")
+    # print("HIT!")
 
     # Initialize a list to hold the new sentences
     new_sentences = []
@@ -99,5 +104,5 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
     new_ids_tensor = torch.tensor(new_sentences)
 
     # Print the shape of the tensor
-    print(f"Shape of new_ids_tensor: {new_ids_tensor.shape}")
+    # print(f"Shape of new_ids_tensor: {new_ids_tensor.shape}")
     return new_ids_tensor
