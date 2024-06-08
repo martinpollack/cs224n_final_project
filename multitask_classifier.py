@@ -35,6 +35,8 @@ from datasets import (
 
 from evaluation import model_eval_sst, model_eval_multitask, model_eval_test_multitask
 
+from synonym_replacer import replace_synonyms
+
 TQDM_DISABLE = False
 
 class CosineSimilarityLoss(nn.Module):
@@ -306,6 +308,10 @@ def train_multitask(args):
                 batch = next(sst_iter)
                 b_ids, b_mask, b_labels = (batch['token_ids'],
                                            batch['attention_mask'], batch['labels'])
+                
+                if args.sgd_synonym_replacement:
+                    b_ids = replace_synonyms(ids=b_ids, tokenizer=sst_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+
                 b_ids = b_ids.to(device)
                 b_mask = b_mask.to(device)
                 b_labels = b_labels.to(device)
@@ -327,6 +333,10 @@ def train_multitask(args):
                  b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
                               batch['token_ids_2'], batch['attention_mask_2'],
                               batch['labels'])
+                
+                if args.sgd_synonym_replacement:
+                    b_ids1 = replace_synonyms(ids=b_ids1, tokenizer=para_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+                    b_ids2 = replace_synonyms(ids=b_ids2, tokenizer=para_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
@@ -352,6 +362,10 @@ def train_multitask(args):
                  b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
                               batch['token_ids_2'], batch['attention_mask_2'],
                               batch['labels'])
+
+                if args.sgd_synonym_replacement:
+                    b_ids1 = replace_synonyms(ids=b_ids1, tokenizer=sts_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+                    b_ids2 = replace_synonyms(ids=b_ids2, tokenizer=sts_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
@@ -558,6 +572,10 @@ def get_args():
 
     # Cosine similarity
     parser.add_argument("--alt_sts_loss", action='store_true')
+
+    # SGD synonym replacement https://journals.agh.edu.pl/csci/article/view/3023/2181
+    parser.add_argument("--sgd_synonym_replacement", action='store_true')
+    parser.add_argument("--sgd_synonym_replacement_p", type=float, default=0.25, help="Probability of replacement for a given SGD minibatch")
 
     # Task weights
     parser.add_argument("--sst_weight", type=float, default=1.0, help="Weight for the sentiment classification task")
