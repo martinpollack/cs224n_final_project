@@ -25,6 +25,7 @@ from datasets import (
 
 from evaluation import model_eval_sst, model_eval_multitask, model_eval_test_multitask
 from contrastive_training import BertEmbeddingTraining
+from synonym_replacer import replace_synonyms
 
 TQDM_DISABLE = False
 
@@ -329,6 +330,10 @@ def train_multitask(args):
                 batch = next(sst_iter)
                 b_ids, b_mask, b_labels = (batch['token_ids'],
                                            batch['attention_mask'], batch['labels'])
+                
+                if args.sgd_synonym_replacement:
+                    b_ids = replace_synonyms(ids=b_ids, tokenizer=sst_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+
                 b_ids = b_ids.to(device)
                 b_mask = b_mask.to(device)
                 b_labels = b_labels.to(device)
@@ -350,6 +355,10 @@ def train_multitask(args):
                  b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
                               batch['token_ids_2'], batch['attention_mask_2'],
                               batch['labels'])
+
+                if args.sgd_synonym_replacement:
+                    b_ids1 = replace_synonyms(ids=b_ids1, tokenizer=para_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+                    b_ids2 = replace_synonyms(ids=b_ids2, tokenizer=para_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
@@ -375,6 +384,10 @@ def train_multitask(args):
                  b_labels) = (batch['token_ids_1'], batch['attention_mask_1'],
                               batch['token_ids_2'], batch['attention_mask_2'],
                               batch['labels'])
+
+                if args.sgd_synonym_replacement:
+                    b_ids1 = replace_synonyms(ids=b_ids1, tokenizer=sts_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
+                    b_ids2 = replace_synonyms(ids=b_ids2, tokenizer=sts_train_data.tokenizer, p=args.sgd_synonym_replacement_p)
 
                 b_ids1 = b_ids1.to(device)
                 b_mask1 = b_mask1.to(device)
