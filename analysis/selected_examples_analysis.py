@@ -34,14 +34,14 @@ def main():
     print(f"Found {len(mismatches)} mismatched rows")
 
     # Save the mismatched predictions to a CSV file
-    mismatches.to_csv('./analysis/mismatched_predictions.csv', index=False)
-    print("Mismatched predictions saved to './analysis/mismatched_predictions.csv'")
+    # mismatches.to_csv('./analysis/mismatched_predictions.csv', index=False)
+    # print("Mismatched predictions saved to './analysis/mismatched_predictions.csv'")
 
     # Randomly sample mismatched predictions
     sample_size = min(100, len(mismatches))  # Adjust the sample size as needed
-    random_sample = mismatches.sample(n=sample_size, random_state=42)
-    random_sample.to_csv('./analysis/random_sample_mismatched_predictions.csv', index=False)
-    print("Random sample of mismatched predictions saved to './analysis/random_sample_mismatched_predictions.csv'")
+    random_sample = mismatches.sample(n=sample_size, random_state=333)
+    random_sample.to_csv('./analysis/analysis_data/random_sample_mismatched_predictions-politics.csv', index=False)
+    print("Random sample of mismatched predictions saved to './analysis/analysis_data/random_sample_mismatched_predictions-politics.csv'")
 
     # Print the random sample for reference
     for index, row in random_sample.iterrows():
