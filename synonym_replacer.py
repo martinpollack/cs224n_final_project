@@ -26,6 +26,20 @@ def get_wordnet_pos(treebank_tag):
     else:
         return None
 
+def do_replacement(word, pos, new_sentence):
+    wordnet_pos = get_wordnet_pos(pos)
+    if wordnet_pos == wordnet.ADJ:
+        synonyms = wordnet.synsets(word, pos=wordnet_pos)
+        if synonyms:
+            print("There exist {} synonyms!".format(len(synonyms)))
+            synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
+            print("I replaced {} with {}!".format(word, synonym))
+            new_sentence.append(synonym)
+        else:
+            new_sentence.append(word)
+    else:
+        new_sentence.append(word)
+
 def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> torch.Tensor:
     """
     A function that replaces certain token IDs with their synonyms based on a given probability.
@@ -46,6 +60,8 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
     if r >= p:
         return ids
 
+    print("HIT!")
+
     # Initialize a list to hold the new sentences
     new_sentences = []
 
@@ -64,29 +80,11 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
         # Iterate through pos_tags in the chosen direction
         if forward_direction:
             for word, pos in pos_tags:
-                wordnet_pos = get_wordnet_pos(pos)
-                if wordnet_pos == wordnet.ADJ:
-                    synonyms = wordnet.synsets(word, pos=wordnet_pos)
-                    if synonyms:
-                        synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
-                        new_sentence.append(synonym)
-                    else:
-                        new_sentence.append(word)
-                else:
-                    new_sentence.append(word)
+                do_replacement(word, pos, new_sentence)
         else:
             # Backward direction of the sentence
             for word, pos in reversed(pos_tags):
-                wordnet_pos = get_wordnet_pos(pos)
-                if wordnet_pos == wordnet.ADJ:
-                    synonyms = wordnet.synsets(word, pos=wordnet_pos)
-                    if synonyms:
-                        synonym = synonyms[0].lemmas()[0].name()  # Choose the first synonym
-                        new_sentence.append(synonym)
-                    else:
-                        new_sentence.append(word)
-                else:
-                    new_sentence.append(word)
+                do_replacement(word, pos, new_sentence)
             new_sentence.reverse()  # Reverse to maintain original order
         
         # Convert the new sentence back to token IDs
@@ -96,4 +94,6 @@ def replace_synonyms(ids: torch.Tensor, tokenizer: BertTokenizer, p: float) -> t
     # Convert the list of new sentences back to a tensor
     new_ids_tensor = torch.tensor(new_sentences)
 
+    # Print the shape of the tensor
+    print(f"Shape of new_ids_tensor: {new_ids_tensor.shape}")
     return new_ids_tensor
