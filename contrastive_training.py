@@ -83,10 +83,14 @@ def main(args):
     scaler = GradScaler()
 
     if args.curriculum_training:
-        if args.sort_by_cosine:
+        if args.sort_by_cosine_entailment:
             premise_entailment_dists = torch.load("premise_entailment_dists.pt").to(device)
             print(f"Loaded cosine distances from premise_entailment_dists.pt")
             sorted_indices = torch.argsort(premise_entailment_dists, descending=True)
+        elif args.sort_by_cosine_contradiction:
+            premise_contradiction_dists = torch.load("premise_contradiction_dists.pt").to(device)
+            print(f"Loaded cosine distances from premise_contradiction_dists.pt")
+            sorted_indices = torch.argsort(premise_contradiction_dists, descending=False)
         else:
             difficulty_labels = torch.load(f"triplet_difficulty_classification_{args.distance_margin}.pt").to(device)
             print(f"Loaded difficulty labels from triplet_difficulty_classification_{args.distance_margin}.pt")
@@ -102,7 +106,7 @@ def main(args):
             g_t = pacing_function(epoch + 1, T, k, args.lambda_)
             selected_indices = sorted_indices[:g_t]
             subset = Subset(dataset, selected_indices)
-            dataloader = DataLoader(subset, batch_size=args.batch_size, shuffle=True,
+            dataloader = DataLoader(subset, batch_size=args.batch_size, shuffle=False,
                                     collate_fn=dataset.collate_fn, num_workers=args.num_workers)
 
         for batch in tqdm(dataloader):
@@ -152,14 +156,15 @@ def get_args():
     parser.add_argument("--curriculum_training", action='store_true')
     parser.add_argument("--lambda_", type=float, default=1.0, help='lambda for pacing function')
     parser.add_argument("--distance_margin", type=float, default=0.2)
-    parser.add_argument("--sort_by_cosine", action='store_true')
+    parser.add_argument("--sort_by_cosine_entailment", action='store_true')
+    parser.add_argument("--sort_by_cosine_contradiction", action='store_true')
     return parser.parse_args()
 
 
 if __name__ == '__main__':
     args = get_args()
     if args.curriculum_training:
-        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-{args.tau}-contrastive_curriculum.pt'
+        args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-{args.tau}-{args.lambda_}-{args.distance_margin}-contrastive_curriculum.pt'
     else:
         args.output_model_path = f'embeddings-{args.epochs}-{args.lr}-{args.tau}-contrastive-baseline.pt'  # Save path.
     seed_everything(args.seed)
