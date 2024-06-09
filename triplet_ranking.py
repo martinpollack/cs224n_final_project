@@ -56,13 +56,13 @@ def main(args):
     premise_contradiction_dists = torch.cat(premise_contradiction_dists, dim=0).to(device)
 
     torch.save(premise_entailment_dists, "premise_entailment_dists.pt")
-    torch.save(premise_contradiction_dists, "premise_contradiction_dists")
+    torch.save(premise_contradiction_dists, "premise_contradiction_dists.pt")
 
     tune_m(args)
 
 def tune_m(args):
     premise_entailment_dists = torch.load("premise_entailment_dists.pt")
-    premise_contradiction_dists = torch.load("premise_contradiction_dists")
+    premise_contradiction_dists = torch.load("premise_contradiction_dists.pt")
 
     device = torch.device('cuda') if args.use_gpu else torch.device('cpu')
 
